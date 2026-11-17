@@ -11,7 +11,12 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+// Tant que Filament n'est pas installé, ses deux interfaces existent quand même (vides) : le site continue de marcher.
+if (! interface_exists(\Filament\Models\Contracts\FilamentUser::class)) {
+    eval('namespace Filament\Models\Contracts; interface FilamentUser {} interface HasName {}');
+}
+
+class User extends Authenticatable implements \Filament\Models\Contracts\FilamentUser, \Filament\Models\Contracts\HasName
 {
     use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
@@ -32,16 +37,25 @@ class User extends Authenticatable
         'gender',
         'country',
         'city',
+        'school_space_id',
         'website',
         'is_private',
         'is_active',
+        'is_admin',
         'username_changed',
         'last_login_at',
         'last_login_ip',
         'phone_verification_code',
         'phone_verified_at',
         'phone_verification_expires_at',
-        'verified_at'
+        'verified_at',
+        'last_seen_at',
+        'notification_settings',
+        'interests',
+        'interests_asked_at',
+        'city_located_at',
+        'city_asked_at',
+        'duels_seen_at',
     ];
 
     protected $hidden = [
@@ -57,9 +71,41 @@ class User extends Authenticatable
         'last_login_at' => 'datetime',
         'is_private' => 'boolean',
         'is_active' => 'boolean',
+        'is_admin' => 'boolean',
+        'verified_at' => 'datetime',
         'username_changed' => 'boolean',
+        'last_seen_at' => 'datetime',
+        'notification_settings' => 'array',
+        'interests' => 'array',
+        'interests_asked_at' => 'datetime',
+        'city_located_at' => 'datetime',
+        'city_asked_at' => 'datetime',
+        'duels_seen_at' => 'datetime',
     ];
     protected $appends = ['cover', 'avatar','avatar_url','cover_url']; // Nom de l'attribut en snake_case
+
+    /** Son institution d'enseignement (un Espace de type « school »). */
+    public function school()
+    {
+        return $this->belongsTo(Space::class, 'school_space_id');
+    }
+
+    /** Les jours où la personne est venue. */
+    public function visits()
+    {
+        return $this->hasMany(UserVisit::class);
+    }
+
+    /** Seuls les comptes admin entrent dans /admin. */
+    public function canAccessPanel($panel): bool
+    {
+        return (bool) $this->is_admin && $this->is_active !== false;
+    }
+
+    public function getFilamentName(): string
+    {
+        return trim($this->first_name.' '.$this->last_name) ?: (string) $this->username;
+    }
 
     // Boot : génération automatique du username
     protected static function boot()
@@ -76,6 +122,29 @@ class User extends Authenticatable
         });
     }
 
+    /** Ancien pseudo de quelqu'un : personne d'autre ne peut le prendre. */
+    public static function usernameReserved(string $username, ?int $exceptUserId = null): bool
+    {
+        return \Illuminate\Support\Facades\DB::table('username_history')
+            ->whereRaw('LOWER(username) = ?', [mb_strtolower($username)])
+            ->when($exceptUserId, fn ($q) => $q->where('user_id', '!=', $exceptUserId))
+            ->exists();
+    }
+
+    /** Un ancien pseudo : la personne qui l'avait (pour rediriger vers son profil actuel). */
+    public static function byOldUsername(string $username): ?self
+    {
+        $id = \Illuminate\Support\Facades\DB::table('username_history')->whereRaw('LOWER(username) = ?', [mb_strtolower($username)])->value('user_id');
+
+        return $id ? static::find($id) : null;
+    }
+
+    /** Le pseudo ne se change qu'une seule fois (le premier est créé à l'inscription). */
+    public function canChangeUsername(): bool
+    {
+        return ! $this->username_changed;
+    }
+
     // Génération username unique
     public static function generateUniqueUsername(string $firstName, string $lastName): string
     {
@@ -87,7 +156,8 @@ class User extends Authenticatable
         $username = $base;
         $counter = 1;
 
-        while (static::withTrashed()->where('username', $username)->exists()) {
+        // Ni un pseudo actuel, ni l'ancien pseudo de quelqu'un (réservé pour toujours)
+        while (static::withTrashed()->where('username', $username)->exists() || static::usernameReserved($username)) {
             $username = $base . $counter;
             $counter++;
         }
@@ -186,8 +256,7 @@ class User extends Authenticatable
 
 
 
-        $url = route('media', preg_replace('/\.(?=[^.]*$)/', ',', preg_replace('#/#', '&',  $link)));
-        return $url;
+        return \App\Support\MediaUrl::make($link);
     }
 
     public function isValidVerificationCode(string $code): bool
@@ -271,5 +340,70 @@ class User extends Authenticatable
             ->withPivot('is_accepted', 'accepted_at')
             ->wherePivot('is_accepted', true)
             ->withTimestamps();
+    }
+
+    // ── Compétitions & couche sociale ───────────────────────────
+
+    public function organizedCompetitions()
+    {
+        return $this->morphMany(Competition::class, 'organizer');
+    }
+
+    public function competitionEntries()
+    {
+        return $this->morphMany(CompetitionEntry::class, 'participant');
+    }
+
+    public function ratings()
+    {
+        return $this->morphMany(Rating::class, 'rateable');
+    }
+
+    public function badges()
+    {
+        return $this->morphMany(Badge::class, 'owner');
+    }
+
+    public function activities()
+    {
+        return $this->morphMany(Activity::class, 'actor');
+    }
+
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    /**
+     * Ids de tous les Espaces auxquels l'utilisateur est lié (propriétaire, gestionnaire ou membre).
+     */
+    public function allSpaceIds(): array
+    {
+        return Space::query()
+            ->where('owner_id', $this->id)
+            ->orWhereHas('managers', fn ($q) => $q->where('users.id', $this->id))
+            ->orWhereHas('members', fn ($q) => $q->where('users.id', $this->id))
+            ->pluck('id')
+            ->all();
+    }
+
+    /** Ids des Espaces que l'utilisateur peut représenter (propriétaire, admin, éditeur). */
+    /** Espaces au nom desquels je peux publier (administrateur, modérateur ou publieur). */
+    public function publishableSpaceIds(): array
+    {
+        return Space::query()
+            ->where('owner_id', $this->id)
+            ->orWhereHas('managers', fn ($q) => $q->where('users.id', $this->id)->whereIn('space_managers.role', ['admin', 'editor', 'viewer']))
+            ->pluck('id')
+            ->all();
+    }
+
+    public function manageableSpaceIds(): array
+    {
+        return Space::query()
+            ->where('owner_id', $this->id)
+            ->orWhereHas('managers', fn ($q) => $q->where('users.id', $this->id)->whereIn('space_managers.role', ['admin', 'editor']))
+            ->pluck('id')
+            ->all();
     }
 }

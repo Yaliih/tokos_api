@@ -21,7 +21,7 @@ class VerifyPhoneRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'verification_code.size' => 'Le code doit contenir exactement 6 chiffres',
+            'verification_code.size' => __('Le code doit contenir exactement 6 chiffres'),
         ];
     }
 }

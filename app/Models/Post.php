@@ -16,6 +16,7 @@ class Post extends Model
         'authorable_id',
         'user_id',
         'type',
+        'style',             
         'slug',
         'content',
         'media',
@@ -26,7 +27,8 @@ class Post extends Model
     ];
 
     protected $casts = [
-        'media' => 'array',
+        'media' => 'array',    
+        'style' => 'array',     
         'is_pinned' => 'boolean',
         'is_featured' => 'boolean',
         'published_at' => 'datetime',
@@ -132,6 +134,12 @@ class Post extends Model
     public function contest()
     {
         return $this->hasOne(PostContest::class);
+    }
+
+    // ⭐ Moteur de compétition unifié (défi, duel, concours, tournoi)
+    public function competition()
+    {
+        return $this->hasOne(Competition::class);
     }
 
     public function contestRounds()
@@ -270,23 +278,31 @@ class Post extends Model
         return $this->published_at ? $this->published_at->diffForHumans() : null;
     }
 
-    public function getMediaUrlsAttribute(): array
-    {
-        if (empty($this->media)) {
-            return [];
-        }
+public function getMediaUrlsAttribute(): array
+{
+    if (empty($this->media)) return [];
 
-        $mediaUrls = [];
-        foreach ($this->media as $mediaItem) {
-            if (isset($mediaItem['url']) && $mediaItem['url']) {
-                $mediaUrls[] = [
-                    'type' => $mediaItem['type'] ?? 'image',
-                    'url' => $this->getMediaUrl($mediaItem['url']),
-                ];
+    $mediaUrls = [];
+    foreach ($this->media as $mediaItem) {
+        if (isset($mediaItem['url']) && $mediaItem['url']) {
+            $item = [
+                'type' => $mediaItem['type'] ?? 'image',
+                'url'  => $this->getMediaUrl($mediaItem['url']),
+            ];
+
+            // ⭐ AJOUTER : propager metadata (peaks + duration) pour l'audio
+            if (!empty($mediaItem['metadata'])) {
+                $item['metadata'] = $mediaItem['metadata'];
             }
+            if (!empty($mediaItem['thumbnail_url'])) {
+                $item['thumbnail_url'] = $mediaItem['thumbnail_url'];
+            }
+
+            $mediaUrls[] = $item;
         }
-        return $mediaUrls;
     }
+    return $mediaUrls;
+}
 
     public function getMediaUrl(string $path): string
     {
@@ -472,19 +488,17 @@ class Post extends Model
         return false;
     }
 
-    public function getMediaAttribute($value)
-    {
-        $media = json_decode($value, true);
-        if (empty($media)) {
-            return [];
-        }
+public function getMediaAttribute($value)
+{
+    $media = is_string($value) ? json_decode($value, true) : $value;
+    if (empty($media)) return [];
 
-        foreach ($media as &$item) {
-            if (isset($item['url'])) {
-                $item['url'] = $this->getMediaUrl($item['url']);
-            }
+    foreach ($media as &$item) {
+        if (isset($item['url'])) {
+            $item['url'] = $this->getMediaUrl($item['url']);
         }
-
-        return $media;
+        // metadata reste tel quel
     }
+    return $media;
+}
 }

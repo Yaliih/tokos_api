@@ -1,16 +1,15 @@
 <?php
-// routes/api.php
 
 use App\Http\Controllers\Api\AuthController;
-use App\Http\Controllers\Api\ChallengeController;
-use App\Http\Controllers\Api\ContestController;
+use App\Http\Controllers\Api\AvatarController;
+use App\Http\Controllers\Api\CompetitionController;
+use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\MatchController;
+use App\Http\Controllers\Api\SocialController;
 use App\Http\Controllers\Api\FollowController;
 use App\Http\Controllers\Api\GetMediaController;
-use App\Http\Controllers\Api\ParticipationController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\Api\ProfileController;
-use App\Http\Controllers\Api\SpaceContestAdminController;
-use App\Http\Controllers\Api\SpaceContestCandidateController;
 use App\Http\Controllers\Api\SpaceController;
 use App\Http\Controllers\Api\SpaceManagerController;
 use App\Http\Controllers\Api\SpacePostController;
@@ -21,744 +20,395 @@ use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Authentification publique — Web SPA
+| AUTHENTIFICATION — WEB (Next.js SPA) + MOBILE (Flutter)
 |--------------------------------------------------------------------------
 |
-| Ces routes utilisent la session Laravel.
-| Elles ne retournent aucun token Bearer.
+| - Next.js utilise la session Laravel (middleware "web").
+| - Flutter utilise Sanctum Bearer tokens (pas de middleware "web").
+|
+| Toutes les routes partagées (verify code, reset, preferences) sont
+| exposées DEUX FOIS : une fois pour le web, une fois pour le mobile.
 |
 */
 
-Route::prefix('auth')->group(function () {
-    Route::post('/register', [
-        AuthController::class,
-        'webRegister',
-    ]);
+/*
+|--------------------------------------------------------------------------
+| WEB — Next.js SPA
+|--------------------------------------------------------------------------
+*/
 
-    Route::post('/login', [
-        AuthController::class,
-        'webLogin',
-    ])->name('login');
+Route::prefix('auth')->middleware('web')->group(function () {
 
-    Route::post('/send-verification-code', [
-        AuthController::class,
-        'sendVerificationCode',
-    ]);
+    Route::post('/register', [AuthController::class, 'webRegister'])->middleware('feature:registration');
+    Route::post('/login', [AuthController::class, 'webLogin'])->name('login');
 
-    Route::post('/resend-verification-code', [
-        AuthController::class,
-        'resendVerificationCode',
-    ]);
+    Route::post('/send-verification-code', [AuthController::class, 'sendVerificationCode']);
+    Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
-    Route::post('/reset-password', [
-        AuthController::class,
-        'resetPassword',
-    ]);
-
-    Route::get('/preferences', [
-        AuthController::class,
-        'preferences',
-    ]);
+    Route::get('/preferences', [AuthController::class, 'preferences']);
 });
+
 
 /*
 |--------------------------------------------------------------------------
-| Authentification publique — Application mobile
+| MOBILE — Flutter (Bearer token, pas de session)
 |--------------------------------------------------------------------------
-|
-| Ces routes retournent un token Sanctum.
-|
 */
 
 Route::prefix('mobile/auth')->group(function () {
-    Route::post('/login', [
-        AuthController::class,
-        'mobileLogin',
-    ]);
 
-    Route::post('/register', [
-        AuthController::class,
-        'mobileRegister',
-    ]);
+    // ----- Authentification -----
+    Route::post('/login', [AuthController::class, 'mobileLogin']);
+    Route::post('/register', [AuthController::class, 'mobileRegister'])->middleware('feature:registration');
+
+    // ----- Vérification par SMS -----
+    Route::post('/send-verification-code', [AuthController::class, 'sendVerificationCode']);
+    Route::post('/resend-verification-code', [AuthController::class, 'resendVerificationCode']);
+
+    // ----- Réinitialisation de mot de passe -----
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+
+    // ----- Préférences (centres d'intérêt) -----
+    Route::get('/preferences', [AuthController::class, 'preferences']);
 });
+
 
 /*
 |--------------------------------------------------------------------------
-| Routes publiques
+| ROUTES PUBLIQUES
 |--------------------------------------------------------------------------
 */
+Route::get('/avatars', [AvatarController::class, 'index']);
+// ── App mobile : réglages, fil, commentaires, classement, abonnés (lecture publique, jeton facultatif) ──
+Route::prefix('app')->group(function () {
+    $A = \App\Http\Controllers\Api\AppController::class;
+    Route::get('/config', [$A, 'config']);
+    Route::post('/forgot-password', [$A, 'forgot'])->middleware('throttle:5,1');
+    Route::get('/home', [$A, 'home']);
+    Route::get('/stories', [$A, 'stories']);
+    Route::get('/profile-competitions/{kind}/{handle}', [$A, 'profileCompetitions'])->whereIn('kind', ['user', 'space']); // page « Compétitions » d'un profil
+    Route::get('/suggestions', [$A, 'suggestions']); // « À suivre » (Tout voir), avec ?q= pour chercher
+    Route::get('/search', [$A, 'search']); // la loupe du haut de l'app // bulles « Lancer » + duels en cours, en haut de l'accueil
+    Route::get('/competitions/{competition}/comments', [$A, 'comments']);
+    Route::get('/competitions/{competition}/comment-duels', [$A, 'commentDuels']); // viser un duel dans un commentaire
+    Route::get('/leaderboards', [$A, 'leaderboards'])->middleware('feature:leaderboard');
+    Route::get('/users/{username}/{list}', [$A, 'follows'])->whereIn('list', ['abonnes', 'abonnements']);
+    Route::get('/users/{username}', [$A, 'profile']);
+    Route::get('/spaces', [$A, 'spaces']);
+    Route::get('/spaces/{slug}', [$A, 'space']);
+    Route::middleware('auth:sanctum')->group(function () use ($A) {
+        Route::post('/competitions/{competition}/like', [$A, 'like']);
+        Route::post('/competitions/{competition}/comments', [$A, 'comment'])->middleware(['throttle:20,1', 'feature:comments']);
+        Route::post('/comments/{comment}/like', [$A, 'likeComment'])->whereNumber('comment');
+        Route::post('/competitions/{competition}/edit', [$A, 'edit'])->middleware('feature:editing');
+        Route::get('/competitions/{competition}/edit', [$A, 'editRules']);
+        Route::post('/competitions/{competition}/cancel', [$A, 'cancel']);
+        Route::post('/competitions/{competition}/prize-proof', [$A, 'prizeProof'])->middleware('throttle:10,1');
+        Route::post('/locate', [$A, 'locate'])->middleware('throttle:12,1');
+        Route::get('/places', [$A, 'places'])->middleware('throttle:60,1');
+        Route::post('/interests', [$A, 'interests']);
+        Route::post('/city', [$A, 'city']);
+        Route::post('/report', [$A, 'report'])->middleware('throttle:20,1');
+        Route::get('/wallet', [$A, 'wallet'])->middleware('feature:coins');
+        Route::get('/inbox', [$A, 'inbox']); // « Reçus »
+        Route::post('/inbox/invitations/{invitation}/refuser', [$A, 'inboxDecline'])->whereNumber('invitation');
+        Route::post('/inbox/candidatures/{entry}/{decision}', [$A, 'inboxCandidate'])->whereNumber('entry')->whereIn('decision', ['accepter', 'refuser']);
+        Route::post('/follow/{username}', [$A, 'follow']);
+        Route::post('/spaces/{slug}/join', [$A, 'joinSpace'])->middleware('feature:spaces');
+        Route::get('/my-spaces', [$A, 'mySpaces']); // « Mes Espaces » du profil
+        Route::post('/password/code', [$A, 'sendPasswordCode'])->middleware('throttle:5,1'); // changer son mot de passe : code par SMS
+        Route::post('/password', [$A, 'changePassword'])->middleware('throttle:10,1');
+        Route::get('/spaces/{slug}/team', [$A, 'spaceTeam']);
+        Route::post('/spaces/{slug}/members', [$A, 'spaceAddMember'])->middleware('throttle:30,1');
+        Route::post('/spaces/{slug}/invitation', [$A, 'spaceInviteAnswer']);
+        Route::post('/spaces/{slug}/members/{userId}/decision', [$A, 'spaceMemberDecision'])->whereNumber('userId');
+        Route::post('/spaces/{slug}/members/{userId}/remove', [$A, 'spaceRemoveMember'])->whereNumber('userId');
+        Route::post('/spaces/{slug}/members/{userId}/role', [$A, 'spaceSetRole'])->whereNumber('userId');
+        Route::get('/spaces/{slug}/edit', [$A, 'editSpaceData']);
+        Route::post('/spaces/{slug}/edit', [$A, 'updateSpace'])->middleware('throttle:30,1');
+        Route::post('/spaces', [$A, 'createSpace'])->middleware(['feature:spaces', 'throttle:5,1']);
+        Route::post('/profile', [$A, 'updateProfile'])->middleware('throttle:20,1');
+        Route::post('/gifts', [$A, 'gift'])->middleware(['throttle:30,1', 'feature:gifts']);
+    });
+});
 
-Route::get('/get-media/{path}', [
-    GetMediaController::class,
-    'file',
-])
+// Tâches automatiques déclenchées par cron-job.org (adresse dans l'admin, page « Tâches automatiques »)
+Route::get('/cron/{token}', [\App\Http\Controllers\Api\CronController::class, 'run'])->where('token', '[A-Za-z0-9]{20,80}')->middleware('throttle:10,1');
+
+Route::get('/get-media/{path}', [GetMediaController::class, 'file'])
     ->where('path', '.*')
     ->name('media');
 
+
 /*
 |--------------------------------------------------------------------------
-| Espaces publics
+| ESPACES PUBLICS
 |--------------------------------------------------------------------------
-|
-| Ces routes doivent être placées hors du groupe auth:sanctum
-| pour être réellement accessibles sans connexion.
-|
 */
 
-Route::prefix('spaces')->group(function () {
-    // IMPORTANT : toutes les routes statiques doivent rester avant /{slug}.
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/mine', [
-            SpaceController::class,
-            'mine',
-        ]);
+Route::prefix('spaces')->middleware('feature:spaces')->group(function () {
 
-        Route::get('/discover', [
-            SpaceController::class,
-            'discover',
-        ]);
+    // Routes nécessitant une authentification
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/mine', [SpaceController::class, 'mine']);
+        Route::get('/discover', [SpaceController::class, 'discover']);
     });
 
-    Route::get('/{slug}', [
-        SpaceController::class,
-        'show',
-    ]);
-
-    Route::get('/{slug}/posts', [
-        SpacePostController::class,
-        'index',
-    ]);
-
-    Route::get('/{slug}/members', [
-        SpaceController::class,
-        'members',
-    ]);
-
-    Route::get('/{slug}/activities', [
-        SpaceController::class,
-        'activities',
-    ]);
+    // Routes publiques
+    Route::get('/{slug}', [SpaceController::class, 'show']);
+    Route::get('/{slug}/posts', [SpacePostController::class, 'index']);
+    Route::get('/{slug}/members', [SpaceController::class, 'members']);
+    Route::get('/{slug}/activities', [SpaceController::class, 'activities']);
 });
+
 
 /*
 |--------------------------------------------------------------------------
-| Routes protégées
+| COMPÉTITIONS & SOCIAL — lecture publique
+|--------------------------------------------------------------------------
+| Accessibles sans connexion (liens partagés) ; si un jeton est fourni,
+| la réponse indique en plus ce que l'utilisateur peut faire (voter, participer...).
+*/
+
+Route::get('/competitions', [CompetitionController::class, 'index']);
+// Rappel de SasPay quand un achat de coins est payé ou refusé (signé, sans session)
+Route::post('/payments/webhook/saspay', [\App\Http\Controllers\Web\CoinController::class, 'saspayWebhook'])->middleware('throttle:120,1');
+Route::get('/competitions/options', [CompetitionController::class, 'options']);
+Route::get('/competitions/{competition}', [CompetitionController::class, 'show']);
+Route::get('/competitions/{competition}/entries', [CompetitionController::class, 'entries']);
+Route::get('/competitions/{competition}/matches', [CompetitionController::class, 'matches']);
+Route::get('/competitions/{competition}/bracket', [CompetitionController::class, 'bracket']);
+
+Route::get('/matches/hot', [MatchController::class, 'hot']);
+Route::get('/matches/{match}', [MatchController::class, 'show'])->whereNumber('match');
+
+Route::get('/activity', [SocialController::class, 'feed']);
+Route::get('/activity/users/{username}', [SocialController::class, 'userActivity']);
+Route::get('/activity/spaces/{slug}', [SocialController::class, 'spaceActivity']);
+
+Route::get('/discover', [SocialController::class, 'discover']);
+Route::get('/leaderboards', [SocialController::class, 'leaderboard'])->middleware('feature:leaderboard');
+Route::get('/stats/users/{username}', [SocialController::class, 'userStats']);
+Route::get('/stats/spaces/{slug}', [SocialController::class, 'spaceStats']);
+
+
+/*
+|--------------------------------------------------------------------------
+| ROUTES PROTÉGÉES (auth:sanctum)
 |--------------------------------------------------------------------------
 |
 | auth:sanctum accepte :
-| - la session de la SPA Next.js ;
-| - le Bearer token de l'application mobile.
+| 1. La session SPA Next.js
+| 2. Le Bearer token Flutter
 |
 */
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    // Suggestions « @… » pour défier ou inviter (personnes et Espaces)
+    Route::get('/participants/suggest', [\App\Http\Controllers\Web\ActionController::class, 'suggest'])->middleware('throttle:60,1');
+
     /*
     |--------------------------------------------------------------------------
-    | Authentification
+    | AUTHENTIFICATION
     |--------------------------------------------------------------------------
     */
 
     Route::prefix('auth')->group(function () {
-        Route::get('/user', [
-            AuthController::class,
-            'user',
-        ]);
 
-        Route::post('/logout', [
-            AuthController::class,
-            'webLogout',
-        ]);
+        Route::get('/user', [AuthController::class, 'user']);
 
-        Route::post('/verify-phone', [
-            AuthController::class,
-            'verifyPhone',
-        ]);
+        // webLogout utilise la session, mais on peut aussi logout en mobile via ce endpoint
+        Route::post('/logout', [AuthController::class, 'webLogout'])->middleware('web');
 
-        Route::put('/profile', [
-            AuthController::class,
-            'updateProfile',
-        ]);
+        Route::post('/verify-phone', [AuthController::class, 'verifyPhone']);
+        Route::post('/profile', [AuthController::class, 'updateProfile']);
     });
 
+    // Déconnexion mobile (Bearer token)
+    Route::post('/mobile/auth/logout', [AuthController::class, 'mobileLogout']);
+
+
     /*
     |--------------------------------------------------------------------------
-    | Déconnexion mobile
+    | UTILISATEURS
     |--------------------------------------------------------------------------
     */
 
-    Route::post('/mobile/auth/logout', [
-        AuthController::class,
-        'mobileLogout',
-    ]);
+    Route::get('/users/search', [UserController::class, 'search']);
+
 
     /*
     |--------------------------------------------------------------------------
-    | Utilisateurs
-    |--------------------------------------------------------------------------
-    */
-
-    Route::get('/users/search', [
-        UserController::class,
-        'search',
-    ]);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Profil
+    | PROFIL
     |--------------------------------------------------------------------------
     */
 
     Route::prefix('profile')->group(function () {
-        Route::get('/{username}', [
-            ProfileController::class,
-            'show',
-        ]);
 
-        Route::put('/', [
-            ProfileController::class,
-            'update',
-        ]);
-
-        Route::post('/avatar', [
-            ProfileController::class,
-            'updateAvatar',
-        ]);
-
-        Route::post('/cover', [
-            ProfileController::class,
-            'updateCover',
-        ]);
-
-        Route::delete('/avatar', [
-            ProfileController::class,
-            'deleteAvatar',
-        ]);
-
-        Route::delete('/cover', [
-            ProfileController::class,
-            'deleteCover',
-        ]);
+        Route::get('/{username}', [ProfileController::class, 'show']);
+        Route::put('/', [ProfileController::class, 'update']);
+        Route::post('/avatar', [ProfileController::class, 'updateAvatar']);
+        Route::post('/cover', [ProfileController::class, 'updateCover']);
+        Route::delete('/avatar', [ProfileController::class, 'deleteAvatar']);
+        Route::delete('/cover', [ProfileController::class, 'deleteCover']);
     });
+
 
     /*
     |--------------------------------------------------------------------------
-    | Follow
+    | FOLLOW
     |--------------------------------------------------------------------------
     */
 
     Route::prefix('follow')->group(function () {
-        Route::post('/{username}', [
-            FollowController::class,
-            'follow',
-        ]);
 
-        Route::delete('/{username}', [
-            FollowController::class,
-            'unfollow',
-        ]);
-
-        Route::get('/followers/{username}', [
-            FollowController::class,
-            'followers',
-        ]);
-
-        Route::get('/following/{username}', [
-            FollowController::class,
-            'following',
-        ]);
+        Route::post('/{username}', [FollowController::class, 'follow']);
+        Route::delete('/{username}', [FollowController::class, 'unfollow']);
+        Route::get('/followers/{username}', [FollowController::class, 'followers']);
+        Route::get('/following/{username}', [FollowController::class, 'following']);
     });
+
 
     /*
     |--------------------------------------------------------------------------
-    | Gestion protégée des espaces
+    | ESPACES PROTÉGÉS
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('spaces')->group(function () {
-        // Conservé temporairement pour les anciens clients.
-        Route::get('/', [
-            SpaceController::class,
-            'index',
-        ]);
+    Route::prefix('spaces')->middleware('feature:spaces')->group(function () {
 
-        Route::post('/', [
-            SpaceController::class,
-            'store',
-        ]);
+        Route::get('/', [SpaceController::class, 'index']);
+        Route::post('/', [SpaceController::class, 'store']);
 
-        /*
-        |--------------------------------------------------------------------------
-        | Gestion modulaire d'un espace
-        |--------------------------------------------------------------------------
-        |
-        | Chaque onglet possède son propre endpoint :
-        | - statistiques ;
-        | - concours ;
-        | - candidatures ;
-        | - candidats.
-        |
-        */
+        // Statistiques
+        Route::get('/{slug}/statistics', [SpaceStatisticsController::class, 'show']);
 
-        Route::get('/{slug}/statistics', [
-            SpaceStatisticsController::class,
-            'show',
-        ]);
+        // Gestion de l'espace
+        Route::put('/{slug}', [SpaceController::class, 'update']);
+        Route::delete('/{slug}', [SpaceController::class, 'destroy']);
+        Route::post('/{slug}/avatar', [SpaceController::class, 'updateAvatar']);
+        Route::delete('/{slug}/avatar', [SpaceController::class, 'deleteAvatar']);
+        Route::post('/{slug}/cover', [SpaceController::class, 'updateCover']);
+        Route::delete('/{slug}/cover', [SpaceController::class, 'deleteCover']);
 
-        Route::get('/{slug}/contests', [
-            SpaceContestAdminController::class,
-            'index',
-        ]);
+        // Managers
+        Route::get('/{slug}/managers', [SpaceManagerController::class, 'index']);
+        Route::post('/{slug}/managers', [SpaceManagerController::class, 'addManager']);
+        Route::put('/{slug}/managers/{managerId}', [SpaceManagerController::class, 'updateManager']);
+        Route::delete('/{slug}/managers/{managerId}', [SpaceManagerController::class, 'removeManager']);
 
-        Route::get('/{slug}/contests/{contestId}', [
-            SpaceContestAdminController::class,
-            'show',
-        ])->whereNumber('contestId');
+        // Membres
+        Route::post('/{slug}/join', [SpaceController::class, 'join']);
+        Route::delete('/{slug}/leave', [SpaceController::class, 'leave']);
 
-        Route::put('/{slug}/contests/{contestId}', [
-            SpaceContestAdminController::class,
-            'update',
-        ])->whereNumber('contestId');
-
-        Route::delete('/{slug}/contests/{contestId}', [
-            SpaceContestAdminController::class,
-            'destroy',
-        ])->whereNumber('contestId');
-
-        Route::post('/{slug}/contests/{contestId}/cancel', [
-            SpaceContestAdminController::class,
-            'cancel',
-        ])->whereNumber('contestId');
-
-        Route::get('/{slug}/contests/{contestId}/applications', [
-            SpaceContestCandidateController::class,
-            'applications',
-        ])->whereNumber('contestId');
-
-
-        Route::post('/{slug}/contests/{contestId}/applications/{applicationId}/approve', [
-            SpaceContestCandidateController::class,
-            'approve',
-        ])
-            ->whereNumber('contestId')
-            ->whereNumber('applicationId');
-
-        Route::post('/{slug}/contests/{contestId}/applications/{applicationId}/reject', [
-            SpaceContestCandidateController::class,
-            'reject',
-        ])
-            ->whereNumber('contestId')
-            ->whereNumber('applicationId');
-
-        Route::post('/{slug}/contests/{contestId}/applications/{applicationId}/cancel', [
-            SpaceContestCandidateController::class,
-            'cancel',
-        ])
-            ->whereNumber('contestId')
-            ->whereNumber('applicationId');
-
-        Route::get('/{slug}/contests/{contestId}/candidates', [
-            SpaceContestCandidateController::class,
-            'index',
-        ])->whereNumber('contestId');
-
-        Route::post('/{slug}/contests/{contestId}/candidates', [
-            SpaceContestCandidateController::class,
-            'store',
-        ])->whereNumber('contestId');
-
-        Route::put('/{slug}/contests/{contestId}/candidates/{candidateId}', [
-            SpaceContestCandidateController::class,
-            'update',
-        ])
-            ->whereNumber('contestId')
-            ->whereNumber('candidateId');
-
-        Route::delete('/{slug}/contests/{contestId}/candidates/{candidateId}', [
-            SpaceContestCandidateController::class,
-            'destroy',
-        ])
-            ->whereNumber('contestId')
-            ->whereNumber('candidateId');
-
-        Route::put('/{slug}', [
-            SpaceController::class,
-            'update',
-        ]);
-
-        Route::delete('/{slug}', [
-            SpaceController::class,
-            'destroy',
-        ]);
-
-        Route::post('/{slug}/avatar', [
-            SpaceController::class,
-            'updateAvatar',
-        ]);
-
-        Route::delete('/{slug}/avatar', [
-            SpaceController::class,
-            'deleteAvatar',
-        ]);
-
-        Route::post('/{slug}/cover', [
-            SpaceController::class,
-            'updateCover',
-        ]);
-
-        Route::delete('/{slug}/cover', [
-            SpaceController::class,
-            'deleteCover',
-        ]);
-
-        Route::get('/{slug}/managers', [
-            SpaceManagerController::class,
-            'index',
-        ]);
-
-        Route::post('/{slug}/managers', [
-            SpaceManagerController::class,
-            'addManager',
-        ]);
-
-        Route::put('/{slug}/managers/{managerId}', [
-            SpaceManagerController::class,
-            'updateManager',
-        ]);
-
-        Route::delete('/{slug}/managers/{managerId}', [
-            SpaceManagerController::class,
-            'removeManager',
-        ]);
-
-        Route::post('/{slug}/join', [
-            SpaceController::class,
-            'join',
-        ]);
-
-        Route::delete('/{slug}/leave', [
-            SpaceController::class,
-            'leave',
-        ]);
-
-        Route::post('/{slug}/posts', [
-            SpacePostController::class,
-            'store',
-        ]);
-
-        Route::put('/{slug}/posts/{postSlug}', [
-            SpacePostController::class,
-            'update',
-        ]);
-
-        Route::delete('/{slug}/posts/{postSlug}', [
-            SpacePostController::class,
-            'destroy',
-        ]);
-
-        Route::post('/{slug}/posts/{postSlug}/like', [
-            SpacePostController::class,
-            'like',
-        ]);
-
-        Route::post('/{slug}/posts/{postSlug}/comments', [
-            SpacePostController::class,
-            'comment',
-        ]);
-
-        Route::delete('/{slug}/posts/{postSlug}/comments/{commentId}', [
-            SpacePostController::class,
-            'deleteComment',
-        ]);
+        // Publications d'espace
+        Route::post('/{slug}/posts', [SpacePostController::class, 'store']);
+        Route::put('/{slug}/posts/{postSlug}', [SpacePostController::class, 'update']);
+        Route::delete('/{slug}/posts/{postSlug}', [SpacePostController::class, 'destroy']);
+        Route::post('/{slug}/posts/{postSlug}/like', [SpacePostController::class, 'like']);
+        Route::post('/{slug}/posts/{postSlug}/comments', [SpacePostController::class, 'comment']);
+        Route::delete('/{slug}/posts/{postSlug}/comments/{commentId}', [SpacePostController::class, 'deleteComment']);
     });
+
 
     /*
     |--------------------------------------------------------------------------
-    | Publications
+    | PUBLICATIONS
     |--------------------------------------------------------------------------
-    |
-    | ⭐ SEUL LE CHARGEMENT DU POST UTILISE LE SLUG
-    | Toutes les autres routes utilisent l'ID
-    |
-    | GET /api/posts/feed
-    | GET /api/posts/feed/reels
-    |
     */
 
     Route::prefix('posts')->group(function () {
-        // Feed
-        Route::get('/feed', [
-            PostController::class,
-            'feed',
-        ]);
 
-        Route::get('/feed/reels', [
-            PostController::class,
-            'reels',
-        ]);
+        Route::get('/feed', [PostController::class, 'feed']);
+        Route::get('/feed/reels', [PostController::class, 'reels']);
+        Route::post('/feed/load-more', [PostController::class, 'loadMore']);
 
-        Route::post('/feed/load-more', [
-            PostController::class,
-            'loadMore',
-        ]);
+        Route::get('/', [PostController::class, 'index']);
+        Route::post('/', [PostController::class, 'store']);
 
-        // CRUD
-        Route::get('/', [
-            PostController::class,
-            'index',
-        ]);
+        Route::post('/comments/{commentId}/reply', [PostController::class, 'replyComment']);
+        Route::post('/comments/{commentId}/like', [PostController::class, 'likeComment']);
+        Route::delete('/comments/{commentId}', [PostController::class, 'deleteComment']);
 
-        Route::post('/', [
-            PostController::class,
-            'store',
-        ]);
+        Route::get('/{slug}', [PostController::class, 'showBySlug']);
+        Route::put('/{id}', [PostController::class, 'update'])->whereNumber('id');
+        Route::delete('/{id}', [PostController::class, 'destroy'])->whereNumber('id');
+        Route::post('/{id}/like', [PostController::class, 'like'])->whereNumber('id');
+        Route::post('/{id}/view', [PostController::class, 'markAsViewed'])->whereNumber('id');
+        Route::post('/{id}/bookmark', [PostController::class, 'toggleBookmark'])->whereNumber('id');
+        Route::post('/{id}/share', [PostController::class, 'share'])->whereNumber('id');
+        Route::post('/{id}/report', [PostController::class, 'report'])->whereNumber('id');
 
-        // Commentaires - routes fixes
-        Route::post('/comments/{commentId}/reply', [
-            PostController::class,
-            'replyComment',
-        ]);
-
-        Route::post('/comments/{commentId}/like', [
-            PostController::class,
-            'likeComment',
-        ]);
-
-        Route::delete('/comments/{commentId}', [
-            PostController::class,
-            'deleteComment',
-        ]);
-
-        // ⭐ SEUL GET /{slug} UTILISE LE SLUG
-        Route::get('/{slug}', [
-            PostController::class,
-            'showBySlug',
-        ]);
-
-        // ⭐ TOUTES LES AUTRES ROUTES UTILISENT L'ID
-        Route::put('/{id}', [
-            PostController::class,
-            'update',
-        ])->whereNumber('id');
-
-        Route::delete('/{id}', [
-            PostController::class,
-            'destroy',
-        ])->whereNumber('id');
-
-        Route::post('/{id}/like', [
-            PostController::class,
-            'like',
-        ])->whereNumber('id');
-
-        Route::post('/{id}/view', [
-            PostController::class,
-            'markAsViewed',
-        ])->whereNumber('id');
-
-        Route::post('/{id}/bookmark', [
-            PostController::class,
-            'toggleBookmark',
-        ])->whereNumber('id');
-
-        Route::post('/{id}/share', [
-            PostController::class,
-            'share',
-        ])->whereNumber('id');
-
-        Route::post('/{id}/report', [
-            PostController::class,
-            'report',
-        ])->whereNumber('id');
-
-        Route::get('/{id}/comments', [
-            PostController::class,
-            'getComments',
-        ])->whereNumber('id');
-
-        Route::post('/{id}/comments', [
-            PostController::class,
-            'comment',
-        ])->whereNumber('id');
+        Route::get('/{id}/comments', [PostController::class, 'getComments'])->whereNumber('id');
+        Route::post('/{id}/comments', [PostController::class, 'comment'])->whereNumber('id');
     });
+
 
     /*
     |--------------------------------------------------------------------------
-    | ⭐ CHALLENGES - TOUTES LES ROUTES UTILISENT L'ID
+    | VOTES (débats uniquement — les duels, défis, concours et tournois
+    | passent par le moteur de compétition : voir /competitions et /matches)
     |--------------------------------------------------------------------------
-    |
-    | Seul GET /api/posts/{slug} utilise le slug pour charger le post
-    | Toutes les routes challenges utilisent l'ID du post
-    |
     */
 
-    Route::prefix('challenges')->group(function () {
-        // Récupérer les participants d'un challenge (utilise POST.ID)
-        Route::get('/{postId}/participants', [
-            ChallengeController::class,
-            'getParticipants',
-        ])->whereNumber('postId');
-
-        // Récupérer les duels d'un challenge (utilise POST.ID)
-        Route::get('/{postId}/duels', [
-            ChallengeController::class,
-            'getDuels',
-        ])->whereNumber('postId');
-
-        // Rejoindre un challenge (utilise POST.ID)
-        Route::post('/{postId}/join', [
-            ChallengeController::class,
-            'join',
-        ])->whereNumber('postId');
-
-        // Quitter un challenge (utilise POST.ID)
-        Route::delete('/{postId}/leave', [
-            ChallengeController::class,
-            'leave',
-        ])->whereNumber('postId');
-
-        // Récupérer les détails d'un participant
-        Route::get('/participants/{participantId}', [
-            ChallengeController::class,
-            'getParticipant',
-        ])->whereNumber('participantId');
-
-        // Récupérer les détails d'un duel
-        Route::get('/duels/{duelId}', [
-            ChallengeController::class,
-            'getDuel',
-        ])->whereNumber('duelId');
-    });
+    Route::post('/votes/debate/{postId}', [VoteController::class, 'voteDebate'])->whereNumber('postId');
 
     /*
     |--------------------------------------------------------------------------
-    | ⭐ CONTESTS - TOUTES LES ROUTES UTILISENT L'ID
+    | COMPÉTITIONS (défis, duels, concours, tournois) — actions connectées
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('contests')->group(function () {
-        // Récupérer les candidats d'un concours (utilise POST.ID)
-        Route::get('/{postId}/candidates', [
-            ContestController::class,
-            'getCandidates',
-        ])->whereNumber('postId');
+    Route::prefix('competitions')->group(function () {
+        Route::post('/', [CompetitionController::class, 'store']);
+        Route::put('/{competition}', [CompetitionController::class, 'update'])->middleware('feature:editing');
+        Route::delete('/{competition}', [CompetitionController::class, 'destroy']);
+        Route::post('/{competition}/start', [CompetitionController::class, 'start']);
 
-        // Postuler à un concours (utilise POST.ID)
-        Route::post('/{postId}/apply', [
-            ContestController::class,
-            'apply',
-        ])->whereNumber('postId');
+        Route::post('/{competition}/entries', [CompetitionController::class, 'enter'])->middleware('throttle:20,1');
+        Route::post('/{competition}/candidates', [CompetitionController::class, 'addCandidate']);
+        Route::delete('/{competition}/entries/{entry}', [CompetitionController::class, 'withdraw'])->whereNumber('entry');
+        Route::post('/{competition}/entries/{entry}/approve', [CompetitionController::class, 'approve'])->whereNumber('entry');
+        Route::post('/{competition}/entries/{entry}/reject', [CompetitionController::class, 'reject'])->whereNumber('entry');
+        Route::post('/{competition}/entries/{entry}/vote', [CompetitionController::class, 'voteEntry'])->whereNumber('entry')->middleware('throttle:60,1');
+        Route::post('/{competition}/entries/{entry}/jury-score', [CompetitionController::class, 'juryScore'])->whereNumber('entry')->middleware('feature:jury');
 
-        // Récupérer les détails d'un candidat
-        Route::get('/candidates/{candidateId}', [
-            ContestController::class,
-            'getCandidate',
-        ])->whereNumber('candidateId');
+        Route::post('/{competition}/invitations', [CompetitionController::class, 'invite']);
+        Route::put('/{competition}/jurors', [CompetitionController::class, 'setJurors']);
 
-        // Voter pour un candidat
-        Route::post('/candidates/{candidateId}/vote', [
-            ContestController::class,
-            'voteCandidate',
-        ])->whereNumber('candidateId');
-
-        // Récupérer les participants d'un concours (utilise POST.ID)
-        Route::get('/{postId}/participants', [
-            ContestController::class,
-            'getParticipants',
-        ])->whereNumber('postId');
-
-        // Récupérer les résultats d'un concours (utilise POST.ID)
-        Route::get('/{postId}/results', [
-            ContestController::class,
-            'getResults',
-        ])->whereNumber('postId');
+        Route::get('/{competition}/proposals', [CompetitionController::class, 'proposals']);
+        Route::post('/{competition}/proposals', [CompetitionController::class, 'propose'])->middleware('feature:space_competitions');
+        Route::post('/{competition}/proposals/{proposal}/select', [CompetitionController::class, 'selectProposal'])->whereNumber('proposal');
     });
 
-    
+    Route::prefix('matches')->group(function () {
+        Route::post('/{match}/vote', [MatchController::class, 'vote'])->whereNumber('match')->middleware('throttle:60,1');
+        Route::post('/{match}/react', [MatchController::class, 'react'])->whereNumber('match');
+        // Tournoi : envoyer sa prestation pour le tour (champs content, media[])
+        Route::post('/{match}/submission', function (\Illuminate\Http\Request $r, \App\Models\CompetitionMatch $match) {
+            $m = app(\App\Services\Competition\MatchService::class)->submitRound($r->user(), $match, $r->all());
+
+            return response()->json(['success' => true, 'data' => \App\Support\Presenter::match($m->fresh(['competition', 'entryA.participant', 'entryB.participant']), $r->user())]);
+        })->whereNumber('match')->middleware('throttle:10,1');
+        Route::post('/{match}/rematch', [MatchController::class, 'rematch'])->whereNumber('match')->middleware('feature:rematch');
+    });
+
+    Route::get('/invitations', [InvitationController::class, 'index']);
+    Route::post('/invitations/{invitation}/accept', [InvitationController::class, 'accept'])->whereNumber('invitation');
+    Route::post('/invitations/{invitation}/decline', [InvitationController::class, 'decline'])->whereNumber('invitation');
 
     /*
     |--------------------------------------------------------------------------
-    | ⭐ PARTICIPATIONS - TOUTES LES ROUTES UTILISENT L'ID
+    | NOTIFICATIONS
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('participations')->group(function () {
-        // Récupérer une participation par son ID
-        Route::get('/{id}', [
-            ParticipationController::class,
-            'show',
-        ])->whereNumber('id');
-
-        // Récupérer les commentaires d'une participation (utilise POST.ID)
-        Route::get('/{postId}/comments', [
-            ParticipationController::class,
-            'getComments',
-        ])->whereNumber('postId');
-
-        // Liker une participation (utilise POST.ID)
-        Route::post('/{postId}/like', [
-            ParticipationController::class,
-            'like',
-        ])->whereNumber('postId');
-
-        // Bookmark une participation (utilise POST.ID)
-        Route::post('/{postId}/bookmark', [
-            ParticipationController::class,
-            'bookmark',
-        ])->whereNumber('postId');
-
-        // Partager une participation (utilise POST.ID)
-        Route::post('/{postId}/share', [
-            ParticipationController::class,
-            'share',
-        ])->whereNumber('postId');
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Votes - TOUTES LES ROUTES UTILISENT L'ID
-    |--------------------------------------------------------------------------
-    */
-
-    Route::prefix('votes')->group(function () {
-        // Duel votes (utilise POST.ID)
-        Route::post('/duel/{postId}', [
-            VoteController::class,
-            'voteDuel',
-        ])->whereNumber('postId');
-
-        Route::get('/duel/{postId}', [
-            VoteController::class,
-            'getDuelVote',
-        ])->whereNumber('postId');
-
-        // Debate votes (utilise POST.ID)
-        Route::post('/debate/{postId}', [
-            VoteController::class,
-            'voteDebate',
-        ])->whereNumber('postId');
-
-        // Challenge duel votes (utilise DUEL.ID)
-        Route::post('/challenge-duel/{duelId}', [
-            VoteController::class,
-            'voteChallengeDuel',
-        ])->whereNumber('duelId');
-
-        Route::get('/challenge-duel/{duelId}', [
-            VoteController::class,
-            'getChallengeDuelVote',
-        ])->whereNumber('duelId');
-
-        // Contest candidate votes (utilise CANDIDATE.ID)
-        Route::post('/contest-candidate/{candidateId}', [
-            VoteController::class,
-            'voteContestCandidate',
-        ])->whereNumber('candidateId');
-
-        // Admin route pour rafraîchir tous les compteurs
-        Route::post('/refresh', [
-            VoteController::class,
-            'refreshAll',
-        ])->middleware('admin');
-    });
+    Route::get('/notifications', [SocialController::class, 'notifications']);
+    Route::get('/notifications/unread-count', [SocialController::class, 'unreadCount']);
+    Route::post('/notifications/read', [SocialController::class, 'markRead']);
+    Route::put('/notifications/settings', [SocialController::class, 'notificationSettings']);
+    Route::post('/device-tokens', [SocialController::class, 'registerDevice']);
+    Route::post('/device-tokens/remove', [SocialController::class, 'unregisterDevice']);
 });

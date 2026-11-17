@@ -21,7 +21,7 @@ class SpacePostController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $posts = Post::with(['author', 'media', 'duel', 'contest', 'debate', 'challenge'])
@@ -52,12 +52,12 @@ class SpacePostController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         if (!$space->canPost($user)) {
-            return response()->json(['success' => false, 'message' => 'You cannot post in this space.'], 403);
+            return response()->json(['success' => false, 'message' => __('You cannot post in this space.')], 403);
         }
 
         $validated = $request->validate([
@@ -112,7 +112,7 @@ class SpacePostController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Post created successfully.',
+            'message' => __('Post created successfully.'),
             'data' => $post->load('author'),
         ], 201);
     }
@@ -178,18 +178,18 @@ class SpacePostController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         $post = $space->posts()->where('id', $postId)->first();
 
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         if (!$space->canManage($user) && $post->user_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'You cannot edit this post.'], 403);
+            return response()->json(['success' => false, 'message' => __('You cannot edit this post.')], 403);
         }
 
         $validated = $request->validate([
@@ -203,7 +203,7 @@ class SpacePostController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Post updated.',
+            'message' => __('Post updated.'),
             'data' => $post,
         ]);
     }
@@ -215,18 +215,18 @@ class SpacePostController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         $post = $space->posts()->where('id', $postId)->first();
 
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         if (!$space->canManage($user) && $post->user_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'You cannot delete this post.'], 403);
+            return response()->json(['success' => false, 'message' => __('You cannot delete this post.')], 403);
         }
 
         $post->delete();
@@ -240,7 +240,7 @@ class SpacePostController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Post deleted.',
+            'message' => __('Post deleted.'),
         ]);
     }
 
@@ -251,14 +251,14 @@ class SpacePostController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         $post = $space->posts()->where('id', $postId)->first();
 
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $existingLike = PostLike::where('post_id', $postId)
@@ -292,14 +292,14 @@ class SpacePostController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         $post = $space->posts()->where('id', $postId)->first();
 
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $validated = $request->validate([
@@ -316,7 +316,7 @@ class SpacePostController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Comment added.',
+            'message' => __('Comment added.'),
             'data' => $comment->load('author'),
         ], 201);
     }
@@ -328,30 +328,30 @@ class SpacePostController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         $post = $space->posts()->where('id', $postId)->first();
 
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $comment = $post->comments()->where('id', $commentId)->first();
         if (!$comment) {
-            return response()->json(['success' => false, 'message' => 'Comment not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Comment not found.')], 404);
         }
 
         if (!$space->canManage($user) && $comment->user_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'You cannot delete this comment.'], 403);
+            return response()->json(['success' => false, 'message' => __('You cannot delete this comment.')], 403);
         }
 
         $comment->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Comment deleted.',
+            'message' => __('Comment deleted.'),
         ]);
     }
 }

@@ -61,23 +61,26 @@ class PostDuel extends Model
     }
 
     // ⭐ Méthode générique pour les URLs
-    private function getMediaUrls(?array $media): array
-    {
-        if (empty($media)) {
-            return [];
-        }
+private function getMediaUrls(?array $media): array
+{
+    if (empty($media)) return [];
 
-        $urls = [];
-        foreach ($media as $item) {
-            if (isset($item['url'])) {
-                $urls[] = [
-                    'type' => $item['type'] ?? 'image',
-                    'url' => $this->getMediaUrl($item['url']),
-                ];
+    $urls = [];
+    foreach ($media as $item) {
+        if (isset($item['url'])) {
+            $entry = [
+                'type' => $item['type'] ?? 'image',
+                'url'  => $this->getMediaUrl($item['url']),
+            ];
+            // ⭐ AJOUTER
+            if (!empty($item['metadata'])) {
+                $entry['metadata'] = $item['metadata'];
             }
+            $urls[] = $entry;
         }
-        return $urls;
     }
+    return $urls;
+}
 
     // ⭐ Méthode pour générer l'URL d'un média
     private function getMediaUrl(string $path): string

@@ -20,6 +20,7 @@ class PostComment extends Model
         'user_id',
         'content',
         'parent_id',
+        'match_id',
     ];
 
     protected $casts = [
@@ -30,6 +31,12 @@ class PostComment extends Model
         'replies_count' => 'integer',
         'is_liked_by_user' => 'boolean',
     ];
+
+    /** Le duel visé par ce commentaire (un défi a plusieurs duels). */
+    public function match(): BelongsTo
+    {
+        return $this->belongsTo(CompetitionMatch::class, 'match_id');
+    }
 
     public function post(): BelongsTo
     {

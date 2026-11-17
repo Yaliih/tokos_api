@@ -35,4 +35,18 @@ return [
         ],
     ],
 
+
+    // Notifications push Firebase (optionnel). Voir app/Notifications/Channels/FcmChannel.php
+    'fcm' => [
+        'project_id' => env('FCM_PROJECT_ID'),
+        'credentials' => env('FCM_CREDENTIALS'),
+    ],
+
+
+    // Application Android générée depuis le site (PWABuilder ou Bubblewrap)
+    'twa' => [
+        'package' => env('TWA_PACKAGE'),        // ex. social.sosa.app
+        'sha256' => env('TWA_SHA256'),          // empreinte(s) de la clé de signature, séparées par des virgules
+    ],
+
 ];

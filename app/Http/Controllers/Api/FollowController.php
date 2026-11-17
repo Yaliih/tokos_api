@@ -20,7 +20,7 @@ class FollowController extends Controller
         if (!$userToFollow) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found.',
+                'message' => __('User not found.'),
             ], 404);
         }
 
@@ -29,22 +29,23 @@ class FollowController extends Controller
         if ($currentUser->id === $userToFollow->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'You cannot follow yourself.',
+                'message' => __('You cannot follow yourself.'),
             ], 422);
         }
 
         if ($currentUser->isFollowing($userToFollow)) {
             return response()->json([
                 'success' => false,
-                'message' => 'You are already following this user.',
+                'message' => __('You are already following this user.'),
             ], 422);
         }
 
         $currentUser->follow($userToFollow);
+        app(\App\Services\Social\SocialHooks::class)->followed($currentUser, $userToFollow);
 
         return response()->json([
             'success' => true,
-            'message' => 'User followed successfully.',
+            'message' => __('User followed successfully.'),
             'data' => [
                 'is_following' => true,
                 'followers_count' => $userToFollow->followers()->count(),
@@ -62,7 +63,7 @@ class FollowController extends Controller
         if (!$userToUnfollow) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found.',
+                'message' => __('User not found.'),
             ], 404);
         }
 
@@ -71,7 +72,7 @@ class FollowController extends Controller
         if (!$currentUser->isFollowing($userToUnfollow)) {
             return response()->json([
                 'success' => false,
-                'message' => 'You are not following this user.',
+                'message' => __('You are not following this user.'),
             ], 422);
         }
 
@@ -79,7 +80,7 @@ class FollowController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'User unfollowed successfully.',
+            'message' => __('User unfollowed successfully.'),
             'data' => [
                 'is_following' => false,
                 'followers_count' => $userToUnfollow->followers()->count(),
@@ -97,7 +98,7 @@ class FollowController extends Controller
         if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found.',
+                'message' => __('User not found.'),
             ], 404);
         }
 
@@ -138,7 +139,7 @@ class FollowController extends Controller
         if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found.',
+                'message' => __('User not found.'),
             ], 404);
         }
 

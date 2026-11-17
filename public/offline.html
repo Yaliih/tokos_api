@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hors connexion · Sosa</title>
+<meta name="theme-color" content="#6C5CE7">
+<style>
+  :root { color-scheme: light dark; }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; background: #fff; color: #14141a; text-align: center; padding: 24px; box-sizing: border-box; }
+  @media (prefers-color-scheme: dark) { body { background: #0c0c10; color: #f2f2f5; } p { color: #a0a0ad !important; } }
+  img { width: 72px; height: 72px; border-radius: 20px; }
+  h1 { font-size: 1.3rem; margin: 18px 0 6px; }
+  p { margin: 0 0 22px; color: #5d5d6b; max-width: 32ch; }
+  button { font: inherit; font-weight: 700; border: 0; border-radius: 999px; padding: 12px 26px; background: #6C5CE7; color: #fff; cursor: pointer; }
+</style>
+</head>
+<body>
+<main>
+  <img src="/icons/icon-192.png" alt="">
+  <h1>Pas de connexion</h1>
+  <p>Vérifie ton forfait ou ton réseau. Sosa se recharge dès que la connexion revient.</p>
+  <button type="button" onclick="location.reload()">Réessayer</button>
+</main>
+<script>addEventListener('online', () => location.reload());</script>
+</body>
+</html>

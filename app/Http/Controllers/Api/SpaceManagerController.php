@@ -19,7 +19,7 @@ class SpaceManagerController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $managers = $space->managers->map(function($m) {
@@ -46,12 +46,12 @@ class SpaceManagerController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         if (!$space->isAdmin($user) && $space->owner_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'Only admins can add managers.'], 403);
+            return response()->json(['success' => false, 'message' => __('Only admins can add managers.')], 403);
         }
 
         $validated = $request->validate([
@@ -62,11 +62,11 @@ class SpaceManagerController extends Controller
         $newManager = User::find($validated['user_id']);
         
         if ($space->isManager($newManager)) {
-            return response()->json(['success' => false, 'message' => 'Already a manager.'], 422);
+            return response()->json(['success' => false, 'message' => __('Already a manager.')], 422);
         }
 
         if ($newManager->id === $space->owner_id) {
-            return response()->json(['success' => false, 'message' => 'Owner is already an admin.'], 422);
+            return response()->json(['success' => false, 'message' => __('Owner is already an admin.')], 422);
         }
 
         $space->addManager($newManager, $validated['role'] ?? 'editor');
@@ -81,7 +81,7 @@ class SpaceManagerController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Manager added.',
+            'message' => __('Manager added.'),
             'data' => $space->managers->map(function($m) {
                 return [
                     'id' => $m->id,
@@ -101,12 +101,12 @@ class SpaceManagerController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         if (!$space->isAdmin($user) && $space->owner_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'Only admins can update roles.'], 403);
+            return response()->json(['success' => false, 'message' => __('Only admins can update roles.')], 403);
         }
 
         $validated = $request->validate([
@@ -115,15 +115,15 @@ class SpaceManagerController extends Controller
 
         $manager = User::find($managerId);
         if (!$manager) {
-            return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('User not found.')], 404);
         }
 
         if ($manager->id === $space->owner_id) {
-            return response()->json(['success' => false, 'message' => 'Cannot change owner role.'], 422);
+            return response()->json(['success' => false, 'message' => __('Cannot change owner role.')], 422);
         }
 
         if (!$space->isManager($manager)) {
-            return response()->json(['success' => false, 'message' => 'User is not a manager.'], 422);
+            return response()->json(['success' => false, 'message' => __('User is not a manager.')], 422);
         }
 
         $space->updateManagerRole($manager, $validated['role']);
@@ -137,7 +137,7 @@ class SpaceManagerController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Role updated.',
+            'message' => __('Role updated.'),
         ]);
     }
 
@@ -148,25 +148,25 @@ class SpaceManagerController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         if (!$space->isAdmin($user) && $space->owner_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'Only admins can remove managers.'], 403);
+            return response()->json(['success' => false, 'message' => __('Only admins can remove managers.')], 403);
         }
 
         $manager = User::find($managerId);
         if (!$manager) {
-            return response()->json(['success' => false, 'message' => 'User not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('User not found.')], 404);
         }
 
         if ($manager->id === $space->owner_id) {
-            return response()->json(['success' => false, 'message' => 'Cannot remove the owner.'], 422);
+            return response()->json(['success' => false, 'message' => __('Cannot remove the owner.')], 422);
         }
 
         if (!$space->isManager($manager)) {
-            return response()->json(['success' => false, 'message' => 'User is not a manager.'], 422);
+            return response()->json(['success' => false, 'message' => __('User is not a manager.')], 422);
         }
 
         $space->removeManager($manager);
@@ -180,7 +180,7 @@ class SpaceManagerController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Manager removed.',
+            'message' => __('Manager removed.'),
         ]);
     }
 }

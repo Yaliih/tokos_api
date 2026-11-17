@@ -24,10 +24,10 @@ class ResetPasswordRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone_code.starts_with' => 'Country code must start with +',
-            'verification_code.size' => 'Verification code must be exactly 6 digits',
-            'password.min' => 'Password must be at least 6 characters',
-            'password.confirmed' => 'Passwords do not match',
+            'phone_code.starts_with' => __('Country code must start with +'),
+            'verification_code.size' => __('Verification code must be exactly 6 digits'),
+            'password.min' => __('Password must be at least 6 characters'),
+            'password.confirmed' => __('Passwords do not match'),
         ];
     }
 }

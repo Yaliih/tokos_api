@@ -32,7 +32,7 @@ class RegisterRequest extends FormRequest
             'email' => 'nullable|email|max:255|unique:users,email',
             'password' => 'required|string|min:6|confirmed',
             'birth_date' => 'required|date|before:-13 years',
-            'gender' => 'nullable|in:male,female',
+            'gender' => 'required|in:male,female',
             'preferences' => 'nullable|array',
             'preferences.*' => 'exists:preferences,id',
             'verification_code' => 'required|string|size:6', // ⭐ AJOUTÉ
@@ -42,12 +42,14 @@ class RegisterRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone_code.starts_with' => 'The country code must start with +',
-            'phone_number.regex' => 'The phone number must not start with 0',
-            'phone_number.unique' => 'This phone number is already registered.',
-            'birth_date.before' => 'You must be at least 13 years old.',
-            'verification_code.required' => 'Verification code is required.',
-            'verification_code.size' => 'Verification code must be exactly 6 digits.',
+            'phone_code.starts_with' => __('L\'indicatif doit commencer par +.'),
+            'phone_number.regex' => 'Le numéro ne doit pas commencer par 0.',
+            'phone_number.unique' => 'Ce numéro a déjà un compte. Connecte-toi.',
+            'birth_date.before' => __('Il faut avoir au moins 13 ans.'),
+            'gender.required' => __('Choisis : une femme ou un homme.'),
+            'gender.in' => __('Choisis : une femme ou un homme.'),
+            'verification_code.required' => 'Entre le code reçu par SMS.',
+            'verification_code.size' => __('Le code a 6 chiffres.'),
         ];
     }
 }

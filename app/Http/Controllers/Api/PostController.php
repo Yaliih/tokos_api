@@ -1,5 +1,4 @@
 <?php
-// app/Http/Controllers/Api/PostController.php
 
 namespace App\Http\Controllers\Api;
 
@@ -19,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use App\Rules\MaxAudioDuration;
 
 class PostController extends Controller
 {
@@ -34,50 +34,51 @@ class PostController extends Controller
     /**
      * Feed personnalisé
      */
-public function feed(Request $request): JsonResponse
-{
-    $page = max(1, (int) $request->integer('page', 1));
-    $perPage = max(1, min(50, (int) $request->integer('per_page', 20)));
+    public function feed(Request $request): JsonResponse
+    {
+        $page = max(1, (int) $request->integer('page', 1));
+        $perPage = max(1, min(50, (int) $request->integer('per_page', 20)));
 
-    $feed = $this->recommendation->getPersonalizedFeed(
-        $request->user(),
-        $page,
-        $perPage
-    );
+        $feed = $this->recommendation->getPersonalizedFeed(
+            $request->user(),
+            $page,
+            $perPage,
+            $request->query('type')
+        );
 
-    return response()->json([
-        'success' => true,
-        'data' => $feed['data'],
-        'pagination' => [
-            'current_page' => $feed['current_page'],
-            'last_page' => $feed['last_page'],
-            'per_page' => $feed['per_page'],
-            'total' => $feed['total'],
-        ],
-        'has_more' => $feed['current_page'] < $feed['last_page'],
-    ]);
-}
+        return response()->json([
+            'success' => true,
+            'data' => $feed['data'],
+            'pagination' => [
+                'current_page' => $feed['current_page'],
+                'last_page' => $feed['last_page'],
+                'per_page' => $feed['per_page'],
+                'total' => $feed['total'],
+            ],
+            'has_more' => $feed['current_page'] < $feed['last_page'],
+        ]);
+    }
 
     /**
      * Récupérer les reels
      */
-public function reels(Request $request): JsonResponse
-{
-    return response()->json([
-        'success' => true,
-        'data' => $this->recommendation->getReels($request->user()),
-    ]);
-}
+    public function reels(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->recommendation->getReels($request->user()),
+        ]);
+    }
 
     /**
      * Charger plus de posts
      */
-public function loadMore(Request $request): JsonResponse
-{
-    // Plus de reshuffle automatique : il provoquait des doublons et
-    // empêchait le frontend de considérer réellement le feed terminé.
-    return $this->feed($request);
-}
+    public function loadMore(Request $request): JsonResponse
+    {
+        // Plus de reshuffle automatique : il provoquait des doublons et
+        // empêchait le frontend de considérer réellement le feed terminé.
+        return $this->feed($request);
+    }
 
     /**
      * Upload d'un fichier
@@ -85,7 +86,7 @@ public function loadMore(Request $request): JsonResponse
     private function uploadFile($file, string $folder = 'posts'): string
     {
         $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs($folder, $filename, 'public');
+        $path = $file->storeAs($folder, $filename, config('filesystems.media', 'public'));
         return $path;
     }
 
@@ -112,16 +113,22 @@ public function loadMore(Request $request): JsonResponse
 
         $validated = $request->validate([
             'space_slug' => 'nullable|string|exists:spaces,slug',
-            'type' => 'nullable|in:post,duel,contest,challenge,debate',
+            'type' => 'nullable|in:post,debate',
             'content' => 'nullable|string|max:5000',
             'media' => 'nullable|array',
             'media.*.type' => 'required|in:image,video,audio,pdf,other',
+            'media.*.metadata' => 'nullable|json',
             'media.*.url' => 'nullable|string|max:2048',
             'media.*.file' => 'nullable|file|max:20480',
+            'style' => 'nullable|string', 
             'is_pinned' => 'boolean',
             'is_featured' => 'boolean',
-            'option_a' => 'required_if:type,duel|string',
-            'option_b' => 'required_if:type,duel|string',
+            'option_a' => 'nullable|string',
+            'option_b' => 'nullable|string',
+            'option_a_media.*.file' => ['nullable', 'file',  new MaxAudioDuration(120)],
+            'option_b_media.*.file' => ['nullable', 'file',  new MaxAudioDuration(120)],
+            'option_a_media.*.metadata' => 'nullable|json',
+            'option_b_media.*.metadata' => 'nullable|json',
             'option_a_media' => 'nullable|array',
             'option_b_media' => 'nullable|array',
             'end_date' => 'nullable|date|after:now',
@@ -130,7 +137,7 @@ public function loadMore(Request $request): JsonResponse
             'prize' => 'nullable|string',
             'category' => 'nullable|string',
             'mode' => 'nullable|in:simple,complex,platform',
-            'has_jury' => 'nullable|boolean',
+            'has_jury' => 'nullable',
             'jury_percentage' => 'nullable|integer|min:0|max:100',
             'vote_type' => 'nullable|in:single,multiple',
             'vote_cost' => 'nullable|numeric|min:0',
@@ -175,6 +182,11 @@ public function loadMore(Request $request): JsonResponse
             'against_argument' => 'required_if:type,debate|string',
         ]);
 
+        // Les défis, duels, concours et tournois se créent désormais via POST /api/competitions
+        if (in_array($request->input('type'), ['duel', 'contest', 'challenge'], true)) {
+            return response()->json(['success' => false, 'message' => 'Utilise POST /api/competitions pour créer un défi, un duel, un concours ou un tournoi.'], 422);
+        }
+
         $authorableType = User::class;
         $authorableId = $user->id;
 
@@ -183,37 +195,21 @@ public function loadMore(Request $request): JsonResponse
             if ($space) {
                 $authorableType = Space::class;
                 $authorableId = $space->id;
-                
+
                 if (!$space->canPost($user)) {
-                    return response()->json(['success' => false, 'message' => 'You cannot post in this space.'], 403);
+                    return response()->json(['success' => false, 'message' => __('You cannot post in this space.')], 403);
                 }
             } else {
-                return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+                return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
             }
         } elseif ($validated['type'] === 'contest') {
             return response()->json(['success' => false, 'message' => 'Les concours doivent être créés dans un espace.'], 422);
         }
 
         DB::beginTransaction();
-
         try {
-            $uploadedMedia = [];
-            if (!empty($validated['media'])) {
-                foreach ($validated['media'] as $mediaItem) {
-                    if (isset($mediaItem['file']) && $mediaItem['file'] instanceof \Illuminate\Http\UploadedFile) {
-                        $url = $this->uploadFile($mediaItem['file'], 'posts');
-                        $uploadedMedia[] = [
-                            'type' => $mediaItem['type'] ?? 'image',
-                            'url' => $url,
-                        ];
-                    } elseif (isset($mediaItem['url'])) {
-                        $uploadedMedia[] = [
-                            'type' => $mediaItem['type'] ?? 'image',
-                            'url' => $mediaItem['url'],
-                        ];
-                    }
-                }
-            }
+            // Utilisation de la fonction factorisée pour traiter les médias du post
+            $uploadedMedia = $this->processMediaArray($validated['media'] ?? [], 'posts');
 
             $post = Post::create([
                 'authorable_type' => $authorableType,
@@ -223,6 +219,9 @@ public function loadMore(Request $request): JsonResponse
                 'slug' => $this->generateSlug($validated['type'] ?? 'post', $user),
                 'content' => $validated['content'] ?? null,
                 'media' => $uploadedMedia,
+                 'style' => isset($validated['style'])
+                    ? json_decode($validated['style'], true)   // ⭐ AJOUT
+                    : null,
                 'is_pinned' => $validated['is_pinned'] ?? false,
                 'is_featured' => $validated['is_featured'] ?? false,
                 'published_at' => now(),
@@ -233,9 +232,11 @@ public function loadMore(Request $request): JsonResponse
 
             DB::commit();
 
+            app(\App\Services\Social\SocialHooks::class)->postCreated($post);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Post created successfully.',
+                'message' => __('Post created successfully.'),
                 'data' => $post->load(['author', 'duel', 'contest', 'challenge', 'debate']),
             ], 201);
 
@@ -246,7 +247,7 @@ public function loadMore(Request $request): JsonResponse
             ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to create post: ' . $e->getMessage(),
+                'message' => 'Impossible de publier pour le moment. Réessaie.',
             ], 500);
         }
     }
@@ -259,12 +260,12 @@ public function loadMore(Request $request): JsonResponse
         $baseSlug = $type . '-' . Str::slug($user->username) . '-' . now()->timestamp;
         $slug = $baseSlug;
         $counter = 1;
-        
+
         while (Post::where('slug', $slug)->exists()) {
             $slug = $baseSlug . '-' . $counter;
             $counter++;
         }
-        
+
         return $slug;
     }
 
@@ -429,20 +430,89 @@ public function loadMore(Request $request): JsonResponse
     private function processMediaArray(array $mediaItems, string $folder): array
     {
         $processed = [];
+
         foreach ($mediaItems as $mediaItem) {
-            if (isset($mediaItem['file']) && $mediaItem['file'] instanceof \Illuminate\Http\UploadedFile) {
-                $url = $this->uploadFile($mediaItem['file'], $folder);
-                $processed[] = [
-                    'type' => $mediaItem['type'] ?? 'image',
-                    'url' => $url,
-                ];
+            $file = $mediaItem['file'] ?? null;
+
+            // ⭐ Récupérer le type envoyé par le client en priorité
+            $mediaType = $mediaItem['type'] ?? null;
+            if ($file instanceof \Illuminate\Http\UploadedFile && $mediaType === null) {
+                $extension = strtolower($file->getClientOriginalExtension());
+
+                if ($extension === 'webm') {
+                    // Analyse poussée du conteneur WebM
+                    $getID3 = new \getID3();
+                    $fileInfo = $getID3->analyze($file->getRealPath());
+
+                    // Si le fichier contient un flux vidéo (video stream), c'est une vidéo
+                    if (isset($fileInfo['video']) && !empty($fileInfo['video']['resolution_x'])) {
+                        $mediaType = 'video';
+                    } else {
+                        // S'il n'y a pas de flux vidéo, c'est uniquement de l'audio
+                        $mediaType = 'audio';
+                    }
+                } else {
+                    // Pour les autres formats classiques (mp3, mp4, jpg...)
+                    $mimeType = $file->getMimeType();
+                    if (str_starts_with($mimeType, 'audio/') || in_array($extension, ['mp3','m4a','wav', 'ogg'])) {
+                        $mediaType = 'audio';
+                    } elseif (str_starts_with($mimeType, 'video/') || in_array($extension, ['mp4', 'mov'])) {
+                        $mediaType = 'video';
+                    } else {
+                        $mediaType = 'image';
+                    }
+                }
+            }
+
+            $mediaData = [
+                'type' => $mediaType,
+            ];
+
+            if ($file instanceof \Illuminate\Http\UploadedFile) {
+                $mediaData['url'] = $this->uploadFile($file, $folder);
             } elseif (isset($mediaItem['url'])) {
-                $processed[] = [
-                    'type' => $mediaItem['type'] ?? 'image',
-                    'url' => $mediaItem['url'],
+                $mediaData['url'] = $mediaItem['url'];
+            } else {
+                continue;
+            }
+
+            // Métadonnées pour l'audio (peaks + duration)
+            if ($mediaType === 'audio') {
+                $peaks = [];
+                $duration = null;
+
+                // Récupérer la valeur de 'metadata' (qui peut être une string JSON ou un array selon la façon dont Laravel le parse)
+                $rawMetadata = $mediaItem['metadata'] ?? null;
+
+                $metadata = [];
+                if (!empty($rawMetadata)) {
+                    $metadata = is_string($rawMetadata) ? json_decode($rawMetadata, true) : $rawMetadata;
+                }
+
+                // Extraire les peaks en toute sécurité
+                if (isset($metadata['peaks'])) {
+                    $rawPeaks = $metadata['peaks'];
+                    $peaks = is_string($rawPeaks) ? json_decode($rawPeaks, true) : $rawPeaks;
+                }
+
+                // Extraire la durée
+                if (isset($metadata['duration'])) {
+                    $duration = (float) $metadata['duration'];
+                }
+
+                // Logger pour vérifier proprement ce qui est extrait
+                logger('Audio metadata processed:', ['peaks_count' => count($peaks), 'duration' => $duration]);
+
+                // Structuration finale pour ta base de données ou ton stockage
+                $mediaData['metadata'] = [
+                    'peaks' => $peaks,
+                    'duration' => $duration,
                 ];
             }
+
+            $processed[] = $mediaData;
         }
+
         return $processed;
     }
 
@@ -649,24 +719,24 @@ public function loadMore(Request $request): JsonResponse
     {
         try {
             Log::info('🔍 showBySlug called with slug: ' . $slug);
-            
+
             $post = $this->findPostBySlug($slug);
 
             if (!$post) {
                 Log::warning('❌ Post not found for slug: ' . $slug);
-                return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+                return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
             }
 
             Log::info('✅ Post found: ' . $post->id);
 
             $user = $request->user();
-            
+
             // Ajouter les informations utilisateur
             if ($user) {
                 $post->is_liked_by_user = $post->likes()->where('user_id', $user->id)->exists();
                 $post->is_bookmarked_by_user = $post->bookmarks()->where('user_id', $user->id)->exists();
                 $post->is_following_user = $post->is_following_user;
-                
+
                 if ($post->type === 'duel' && $post->duel) {
                     $post->voted_option = PostVote::where('post_id', $post->id)
                         ->where('user_id', $user->id)
@@ -677,7 +747,7 @@ public function loadMore(Request $request): JsonResponse
 
                 // ⭐ Ajouter la propriété can_user_challenge
                 $post->can_user_challenge = $this->userCanChallenge($post, $user);
-                
+
                 // ⭐ Ajouter la propriété has_user_joined (pour les challenges)
                 if ($post->type === 'challenge' && $post->challenge) {
                     $post->is_joined_by_user = \App\Models\ChallengeParticipant::where('challenge_id', $post->challenge->id)
@@ -703,7 +773,7 @@ public function loadMore(Request $request): JsonResponse
                 'trace' => $e->getTraceAsString(),
                 'slug' => $slug
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error loading post: ' . $e->getMessage(),
@@ -723,14 +793,14 @@ public function loadMore(Request $request): JsonResponse
         $post = $this->findPostById($id);
 
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $user = $request->user();
         if ($user) {
             $post->is_liked_by_user = $post->likes()->where('user_id', $user->id)->exists();
             $post->is_bookmarked_by_user = $post->bookmarks()->where('user_id', $user->id)->exists();
-            
+
             if ($post->type === 'duel' && $post->duel) {
                 $post->voted_option = PostVote::where('post_id', $post->id)
                     ->where('user_id', $user->id)
@@ -753,12 +823,12 @@ public function loadMore(Request $request): JsonResponse
     {
         $post = Post::find($id);
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $user = $request->user();
         if (!$post->canEdit($user)) {
-            return response()->json(['success' => false, 'message' => 'You cannot edit this post.'], 403);
+            return response()->json(['success' => false, 'message' => __('You cannot edit this post.')], 403);
         }
 
         $validated = $request->validate([
@@ -772,7 +842,7 @@ public function loadMore(Request $request): JsonResponse
 
         return response()->json([
             'success' => true,
-            'message' => 'Post updated.',
+            'message' => __('Post updated.'),
             'data' => $post,
         ]);
     }
@@ -784,12 +854,12 @@ public function loadMore(Request $request): JsonResponse
     {
         $post = Post::find($id);
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $user = $request->user();
         if (!$post->canDelete($user)) {
-            return response()->json(['success' => false, 'message' => 'You cannot delete this post.'], 403);
+            return response()->json(['success' => false, 'message' => __('You cannot delete this post.')], 403);
         }
 
         DB::beginTransaction();
@@ -808,12 +878,12 @@ public function loadMore(Request $request): JsonResponse
             $post->bookmarks()->delete();
             $post->interactions()->delete();
             $post->delete();
-            
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Post deleted.',
+                'message' => __('Post deleted.'),
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -831,12 +901,12 @@ public function loadMore(Request $request): JsonResponse
     {
         $post = Post::find($postId);
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $user = $request->user();
         $userId = $user->id;
-        
+
         $existingLike = PostLike::where('post_id', $postId)
             ->where('user_id', $userId)
             ->first();
@@ -850,7 +920,7 @@ public function loadMore(Request $request): JsonResponse
                 'user_id' => $userId,
             ]);
             $liked = true;
-            
+
             UserInteraction::record($userId, $postId, 'like');
         }
 
@@ -870,12 +940,12 @@ public function loadMore(Request $request): JsonResponse
     {
         $post = Post::find($postId);
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $user = $request->user();
         $duration = $request->input('duration', 5);
-        
+
         $view = PostView::updateOrCreate(
             [
                 'user_id' => $user->id,
@@ -886,12 +956,12 @@ public function loadMore(Request $request): JsonResponse
                 'duration' => $duration,
             ]
         );
-        
+
         UserInteraction::record($user->id, $postId, 'view');
-        
+
         return response()->json([
             'success' => true,
-            'message' => 'Post marked as viewed',
+            'message' => __('Post marked as viewed'),
         ]);
     }
 
@@ -902,7 +972,7 @@ public function loadMore(Request $request): JsonResponse
     {
         $post = Post::find($postId);
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $validated = $request->validate([
@@ -913,7 +983,7 @@ public function loadMore(Request $request): JsonResponse
         if (isset($validated['parent_id'])) {
             $parent = PostComment::find($validated['parent_id']);
             if (!$parent || $parent->post_id !== $postId) {
-                return response()->json(['success' => false, 'message' => 'Parent comment not found in this post.'], 422);
+                return response()->json(['success' => false, 'message' => __('Parent comment not found in this post.')], 422);
             }
         }
 
@@ -926,10 +996,11 @@ public function loadMore(Request $request): JsonResponse
         ]);
 
         UserInteraction::record($user->id, $postId, 'comment');
+        app(\App\Services\Social\SocialHooks::class)->commented($comment);
 
         return response()->json([
             'success' => true,
-            'message' => 'Comment added.',
+            'message' => __('Comment added.'),
             'data' => $comment->load('author', 'replies'),
         ], 201);
     }
@@ -937,74 +1008,68 @@ public function loadMore(Request $request): JsonResponse
     /**
      * Récupérer les commentaires d'un post par ID
      */
+    public function getComments(
+        Request $request,
+        int $postId
+    ): JsonResponse {
+        if (!Post::whereKey($postId)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => __('Post not found.'),
+            ], 404);
+        }
 
-/**
- * Récupérer les commentaires d'un post par ID
- */
-/**
- * Récupérer les commentaires d'un post par ID
- */
-public function getComments(
-    Request $request,
-    int $postId
-): JsonResponse {
-    if (!Post::whereKey($postId)->exists()) {
+        $userId = $request->user()?->id;
+
+        $likedByUser = function ($query) use ($userId) {
+            if ($userId) {
+                $query->where('user_id', $userId);
+            } else {
+                $query->whereRaw('1 = 0');
+            }
+        };
+
+        $comments = PostComment::query()
+            ->where('post_id', $postId)
+            ->whereNull('parent_id')
+            ->with([
+                'author:id,username,first_name,last_name,gender,avatar,verified_at',
+                'replies' => function ($replyQuery) use ($likedByUser) {
+                    $replyQuery
+                        ->with([
+                            'author:id,username,first_name,last_name,gender,avatar,verified_at',
+                            'replies' => function ($subReplyQuery) use ($likedByUser) {
+                                $subReplyQuery
+                                    ->with(
+                                        'author:id,username,first_name,last_name,gender,avatar,verified_at'
+                                    )
+                                    ->withCount('likes')
+                                    ->withExists([
+                                        'likes as is_liked_by_user' => $likedByUser,
+                                    ])
+                                    ->oldest();
+                            },
+                        ])
+                        ->withCount(['likes', 'replies'])
+                        ->withExists([
+                            'likes as is_liked_by_user' => $likedByUser,
+                        ])
+                        ->oldest();
+                },
+            ])
+            ->withCount(['likes', 'replies'])
+            ->withExists([
+                'likes as is_liked_by_user' => $likedByUser,
+            ])
+            ->latest()
+            ->paginate(20);
+
         return response()->json([
-            'success' => false,
-            'message' => 'Post not found.',
-        ], 404);
+            'success' => true,
+            'data' => $comments,
+        ]);
     }
 
-    $userId = $request->user()?->id;
-
-    $likedByUser = function ($query) use ($userId) {
-        if ($userId) {
-            $query->where('user_id', $userId);
-        } else {
-            $query->whereRaw('1 = 0');
-        }
-    };
-
-    $comments = PostComment::query()
-        ->where('post_id', $postId)
-        ->whereNull('parent_id')
-        ->with([
-            'author:id,username,first_name,last_name,gender,avatar,verified_at',
-            'replies' => function ($replyQuery) use ($likedByUser) {
-                $replyQuery
-                    ->with([
-                        'author:id,username,first_name,last_name,gender,avatar,verified_at',
-                        'replies' => function ($subReplyQuery) use ($likedByUser) {
-                            $subReplyQuery
-                                ->with(
-                                    'author:id,username,first_name,last_name,gender,avatar,verified_at'
-                                )
-                                ->withCount('likes')
-                                ->withExists([
-                                    'likes as is_liked_by_user' => $likedByUser,
-                                ])
-                                ->oldest();
-                        },
-                    ])
-                    ->withCount(['likes', 'replies'])
-                    ->withExists([
-                        'likes as is_liked_by_user' => $likedByUser,
-                    ])
-                    ->oldest();
-            },
-        ])
-        ->withCount(['likes', 'replies'])
-        ->withExists([
-            'likes as is_liked_by_user' => $likedByUser,
-        ])
-        ->latest()
-        ->paginate(20);
-
-    return response()->json([
-        'success' => true,
-        'data' => $comments,
-    ]);
-}
     /**
      * Bookmark par ID
      */
@@ -1012,9 +1077,9 @@ public function getComments(
     {
         $user = $request->user();
         $post = Post::find($postId);
-        
+
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $bookmark = \App\Models\PostBookmark::where('post_id', $postId)
@@ -1049,9 +1114,9 @@ public function getComments(
     {
         $user = $request->user();
         $post = Post::find($postId);
-        
+
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $platform = $request->input('platform', 'web');
@@ -1080,9 +1145,9 @@ public function getComments(
     {
         $user = $request->user();
         $post = Post::find($postId);
-        
+
         if (!$post) {
-            return response()->json(['success' => false, 'message' => 'Post not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Post not found.')], 404);
         }
 
         $validated = $request->validate([
@@ -1093,7 +1158,7 @@ public function getComments(
         if (\App\Models\PostReport::hasReported($user->id, $postId)) {
             return response()->json([
                 'success' => false,
-                'message' => 'You have already reported this post.',
+                'message' => __('You have already reported this post.'),
             ], 422);
         }
 
@@ -1107,7 +1172,7 @@ public function getComments(
 
         return response()->json([
             'success' => true,
-            'message' => 'Post reported successfully.',
+            'message' => __('Post reported successfully.'),
             'data' => $report,
         ]);
     }
@@ -1119,7 +1184,7 @@ public function getComments(
     {
         $parent = PostComment::find($commentId);
         if (!$parent) {
-            return response()->json(['success' => false, 'message' => 'Comment not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Comment not found.')], 404);
         }
 
         $validated = $request->validate([
@@ -1136,7 +1201,7 @@ public function getComments(
 
         return response()->json([
             'success' => true,
-            'message' => 'Reply added.',
+            'message' => __('Reply added.'),
             'data' => $comment->load('author'),
         ], 201);
     }
@@ -1148,12 +1213,12 @@ public function getComments(
     {
         $comment = PostComment::find($commentId);
         if (!$comment) {
-            return response()->json(['success' => false, 'message' => 'Comment not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Comment not found.')], 404);
         }
 
         $user = $request->user();
         $userId = $user->id;
-        
+
         $existingLike = \App\Models\CommentLike::where('comment_id', $commentId)
             ->where('user_id', $userId)
             ->first();
@@ -1185,7 +1250,7 @@ public function getComments(
     {
         $comment = PostComment::find($commentId);
         if (!$comment) {
-            return response()->json(['success' => false, 'message' => 'Comment not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Comment not found.')], 404);
         }
 
         $user = $request->user();
@@ -1200,7 +1265,7 @@ public function getComments(
         }
 
         if (!$isAuthor && !$isPostAuthor && !$isSpaceManager) {
-            return response()->json(['success' => false, 'message' => 'You cannot delete this comment.'], 403);
+            return response()->json(['success' => false, 'message' => __('You cannot delete this comment.')], 403);
         }
 
         $comment->replies()->delete();
@@ -1209,7 +1274,7 @@ public function getComments(
 
         return response()->json([
             'success' => true,
-            'message' => 'Comment deleted.',
+            'message' => __('Comment deleted.'),
         ]);
     }
 }

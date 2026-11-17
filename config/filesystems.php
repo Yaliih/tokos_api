@@ -28,6 +28,9 @@ return [
     |
     */
 
+    // Disque des médias (photos, vidéos, audios) : « public » (le serveur) ou « r2 » (Cloudflare R2)
+    'media' => env('MEDIA_DISK', 'public'),
+
     'disks' => [
 
         'local' => [
@@ -45,6 +48,21 @@ return [
             'visibility' => 'public',
             'throw' => false,
             'report' => false,
+        ],
+
+        // Cloudflare R2 (compatible S3, sortie gratuite). Demande : composer require league/flysystem-aws-s3-v3
+        'r2' => [
+            'driver' => 's3',
+            'key' => env('R2_ACCESS_KEY_ID'),
+            'secret' => env('R2_SECRET_ACCESS_KEY'),
+            'region' => 'auto',
+            'bucket' => env('R2_BUCKET'),
+            'endpoint' => env('R2_ENDPOINT'),          // https://<compte>.r2.cloudflarestorage.com
+            'url' => env('R2_PUBLIC_URL'),             // ex. https://media.tondomaine.com (domaine branché sur le bucket)
+            'use_path_style_endpoint' => true,
+            'visibility' => 'public',
+            'throw' => true,
+            'report' => true,
         ],
 
         's3' => [

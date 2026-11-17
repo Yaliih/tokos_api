@@ -105,8 +105,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('post_id')->constrained('posts')->onDelete('cascade');
             $table->text('content');
-            $table->text('option_a');
-            $table->text('option_b');
+            $table->text('option_a')->nullable();
+            $table->text('option_b')->nullable();
             $table->json('option_a_media')->nullable();
             $table->json('option_b_media')->nullable();
             $table->timestamp('end_date')->nullable();

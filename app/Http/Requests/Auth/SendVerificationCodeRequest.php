@@ -33,9 +33,9 @@ class SendVerificationCodeRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'phone_code.starts_with' => 'The country code must start with +',
-            'phone_number.regex' => 'The phone number must not start with 0',
-            'phone_number.unique' => 'This phone number is already registered. Please login instead.',
+            'phone_code.starts_with' => __('The country code must start with +'),
+            'phone_number.regex' => __('The phone number must not start with 0'),
+            'phone_number.unique' => __('This phone number is already registered. Please login instead.'),
         ];
     }
 }

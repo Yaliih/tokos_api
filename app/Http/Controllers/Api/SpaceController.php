@@ -192,6 +192,7 @@ class SpaceController extends Controller
         ]);
 
         $space->addManager($user, 'admin');
+        app(\App\Services\Social\SocialHooks::class)->createdSpace($user, $space);
 
         // Log activity
         SpaceActivity::create([
@@ -203,7 +204,7 @@ class SpaceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Space created successfully.',
+            'message' => __('Space created successfully.'),
             'data' => $space,
         ], 201);
     }
@@ -212,79 +213,80 @@ class SpaceController extends Controller
      * Afficher un espace
      */
     public function show(Request $request, string $slug): JsonResponse
-    {
-        $space = Space::where('slug', $slug)->first();
+{
+    $space = Space::where('slug', $slug)->first();
 
-        if (!$space) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Space not found.',
-            ], 404);
-        }
-
-        $user = auth('sanctum')->user() ?? $request->user();
-        $role = $this->resolveUserRole($space, $user);
-        $isStaff = in_array($role, ['admin', 'editor'], true);
-        $isMember = $user ? $space->isMember($user) : false;
-
-        if ($isStaff) {
-            $space->load(['owner', 'managers']);
-            $spaceData = $space->toArray();
-            $managers = $space->managers->map(function ($manager) {
-                return [
-                    'id' => $manager->id,
-                    'name' => $manager->full_name,
-                    'username' => $manager->username,
-                    'avatar' => $manager->avatar_url ?? $manager->avatar,
-                    'role' => $manager->pivot->role,
-                ];
-            })->values();
-            $recentActivities = $space->activities()->limit(10)->get();
-        } else {
-            // Version publique limitée : aucune donnée de propriétaire,
-            // de gestionnaire, de contact privé ou d'activité interne.
-            $spaceData = [
-                'id' => $space->id,
-                'name' => $space->name,
-                'slug' => $space->slug,
-                'avatar_url' => $space->avatar_url,
-                'cover_url' => $space->cover_url,
-                'bio' => $space->bio,
-                'category' => $space->category,
-                'location' => $space->location,
-                'is_private' => (bool) $space->is_private,
-                'is_verified' => (bool) $space->is_verified,
-                'members_count' => $space->members_count,
-                'trust_score' => (int) $space->trust_score,
-                'trust_level' => $space->trust_level,
-                'total_posts' => $space->total_posts,
-                'created_at' => $space->created_at,
-            ];
-            $managers = collect();
-            $recentActivities = collect();
-        }
-
-        $data = [
-            'space' => $spaceData,
-            'user_role' => $role,
-            'is_member' => $isMember,
-            'is_manager' => in_array($role, ['admin', 'editor', 'viewer'], true),
-            'is_admin' => $role === 'admin',
-            'is_editor' => $role === 'editor',
-            'can_manage' => $isStaff,
-            'can_post' => $isStaff,
-        ];
-
-        if ($isStaff) {
-            $data['managers'] = $managers;
-            $data['recent_activities'] = $recentActivities;
-        }
-
+    if (!$space) {
         return response()->json([
-            'success' => true,
-            'data' => $data,
-        ]);
+            'success' => false,
+            'message' => __('Space not found.'),
+        ], 404);
     }
+
+    $user = auth('sanctum')->user() ?? $request->user();
+    $role = $this->resolveUserRole($space, $user);
+    $isStaff = in_array($role, ['admin', 'editor'], true);
+    $isMember = $user ? $space->isMember($user) : false;
+
+    if ($isStaff) {
+        $space->load(['owner', 'managers']);
+        $spaceData = $space->toArray();
+        $managers = $space->managers->map(function ($manager) {
+            return [
+                'id' => $manager->id,
+                'name' => $manager->full_name,
+                'username' => $manager->username,
+                'avatar' => $manager->avatar_url ?? $manager->avatar,
+                'role' => $manager->pivot->role,
+            ];
+        })->values();
+        $recentActivities = $space->activities()->limit(10)->get();
+    } else {
+        $spaceData = [
+            'id' => $space->id,
+            'name' => $space->name,
+            'slug' => $space->slug,
+            'avatar_url' => $space->avatar_url,
+            'cover_url' => $space->cover_url,
+            'bio' => $space->bio,
+            'category' => $space->category,
+            'location' => $space->location,
+            'is_private' => (bool) $space->is_private,
+            'is_verified' => (bool) $space->is_verified,
+            'members_count' => $space->members_count,
+            'trust_score' => (int) $space->trust_score,
+            'trust_level' => $space->trust_level,
+            'total_posts' => $space->total_posts,
+            'created_at' => $space->created_at,
+        ];
+        $managers = collect();
+        $recentActivities = collect();
+    }
+
+    // ⭐ FUSION : ajoute les métadonnées DIRECTEMENT dans space
+    $spaceData = array_merge($spaceData, [
+        'user_role'  => $role,
+        'is_member'  => $isMember,
+        'is_manager' => in_array($role, ['admin', 'editor', 'viewer'], true),
+        'is_admin'   => $role === 'admin',
+        'is_editor'  => $role === 'editor',
+        'can_manage' => $isStaff,
+        'can_post'   => $isStaff,
+        'owner_id'   => $space->owner_id,
+    ]);
+
+    $data = ['space' => $spaceData];
+
+    if ($isStaff) {
+        $data['managers'] = $managers;
+        $data['recent_activities'] = $recentActivities;
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => $data,
+    ]);
+}
 
     private function resolveUserRole(Space $space, $user): string
     {
@@ -314,12 +316,12 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
-        if (!$space->canManage($user)) {
-            return response()->json(['success' => false, 'message' => 'You do not have permission to manage this space.'], 403);
+        if (!$space->canEditInfo($user)) {
+            return response()->json(['success' => false, 'message' => __('You do not have permission to manage this space.')], 403);
         }
 
         $validated = $request->validate([
@@ -347,7 +349,7 @@ class SpaceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Space updated successfully.',
+            'message' => __('Space updated successfully.'),
             'data' => $space,
         ]);
     }
@@ -359,19 +361,19 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         if ($space->owner_id !== $user->id) {
-            return response()->json(['success' => false, 'message' => 'Only the owner can delete this space.'], 403);
+            return response()->json(['success' => false, 'message' => __('Only the owner can delete this space.')], 403);
         }
 
         $space->delete();
 
         return response()->json([
             'success' => true,
-            'message' => 'Space deleted successfully.',
+            'message' => __('Space deleted successfully.'),
         ]);
     }
 
@@ -382,12 +384,12 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
-        if (!$space->canManage($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if (!$space->canEditInfo($user)) {
+            return response()->json(['success' => false, 'message' => __('Unauthorized.')], 403);
         }
         // Vérifier si un fichier est présent
     
@@ -395,16 +397,16 @@ class SpaceController extends Controller
             'avatar' => 'required|image|max:2048',
         ]);
 
-        if ($space->avatar && Storage::disk('public')->exists($space->avatar)) {
-            Storage::disk('public')->delete($space->avatar);
+        if ($space->avatar && Storage::disk(config('filesystems.media', 'public'))->exists($space->avatar)) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($space->avatar);
         }
 
-        $path = $request->file('avatar')->store('spaces/avatars', 'public');
+        $path = $request->file('avatar')->store('spaces/avatars', config('filesystems.media', 'public'));
         $space->update(['avatar' => $path]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Avatar updated.',
+            'message' => __('Avatar updated.'),
             'data' => ['avatar_url' => $space->avatar_url],
         ]);
     }
@@ -416,22 +418,22 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
-        if (!$space->canManage($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if (!$space->canEditInfo($user)) {
+            return response()->json(['success' => false, 'message' => __('Unauthorized.')], 403);
         }
 
-        if ($space->avatar && Storage::disk('public')->exists($space->avatar)) {
-            Storage::disk('public')->delete($space->avatar);
+        if ($space->avatar && Storage::disk(config('filesystems.media', 'public'))->exists($space->avatar)) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($space->avatar);
         }
         $space->update(['avatar' => null]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Avatar removed.',
+            'message' => __('Avatar removed.'),
         ]);
     }
 
@@ -442,12 +444,12 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
-        if (!$space->canManage($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if (!$space->canEditInfo($user)) {
+            return response()->json(['success' => false, 'message' => __('Unauthorized.')], 403);
         }
 
         $request->validate([
@@ -455,14 +457,14 @@ class SpaceController extends Controller
             'cover_type' => 'required|in:image,video',
         ]);
 
-        if ($space->cover && Storage::disk('public')->exists($space->cover)) {
-            Storage::disk('public')->delete($space->cover);
+        if ($space->cover && Storage::disk(config('filesystems.media', 'public'))->exists($space->cover)) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($space->cover);
         }
 
         $file = $request->file('cover');
         $folder = $request->cover_type === 'image' ? 'spaces/covers/images' : 'spaces/covers/videos';
         $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs($folder, $filename, 'public');
+        $path = $file->storeAs($folder, $filename, config('filesystems.media', 'public'));
 
         $space->update([
             'cover' => $path,
@@ -471,7 +473,7 @@ class SpaceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cover updated.',
+            'message' => __('Cover updated.'),
             'data' => ['cover_url' => $space->cover_url],
         ]);
     }
@@ -483,22 +485,22 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
-        if (!$space->canManage($user)) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        if (!$space->canEditInfo($user)) {
+            return response()->json(['success' => false, 'message' => __('Unauthorized.')], 403);
         }
 
-        if ($space->cover && Storage::disk('public')->exists($space->cover)) {
-            Storage::disk('public')->delete($space->cover);
+        if ($space->cover && Storage::disk(config('filesystems.media', 'public'))->exists($space->cover)) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($space->cover);
         }
         $space->update(['cover' => null, 'cover_type' => 'image']);
 
         return response()->json([
             'success' => true,
-            'message' => 'Cover removed.',
+            'message' => __('Cover removed.'),
         ]);
     }
 
@@ -509,15 +511,16 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         if ($space->isMember($user)) {
-            return response()->json(['success' => false, 'message' => 'Already a member.'], 422);
+            return response()->json(['success' => false, 'message' => __('Already a member.')], 422);
         }
 
         $space->addMember($user);
+        app(\App\Services\Social\SocialHooks::class)->joinedSpace($user, $space);
 
         SpaceActivity::create([
             'space_id' => $space->id,
@@ -528,7 +531,7 @@ class SpaceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Joined the space.',
+            'message' => __('Joined the space.'),
             'data' => [
                 'is_member' => true,
                 'members_count' => $space->members_count,
@@ -543,12 +546,12 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = $request->user();
         if ((int) $space->owner_id === (int) $user->id) {
-            return response()->json(['success' => false, 'message' => 'Owner cannot leave.'], 422);
+            return response()->json(['success' => false, 'message' => __('Owner cannot leave.')], 422);
         }
 
         $role = $this->resolveUserRole($space, $user);
@@ -563,7 +566,7 @@ class SpaceController extends Controller
         $wasViewerManager = $role === 'viewer' && $space->isManager($user);
 
         if (!$wasMember && !$wasViewerManager) {
-            return response()->json(['success' => false, 'message' => 'Not a member.'], 422);
+            return response()->json(['success' => false, 'message' => __('Not a member.')], 422);
         }
 
         if ($wasMember) {
@@ -582,7 +585,7 @@ class SpaceController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Left the space.',
+            'message' => __('Left the space.'),
             'data' => [
                 'is_member' => false,
                 'user_role' => 'visitor',
@@ -598,7 +601,7 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = auth('sanctum')->user() ?? $request->user();
@@ -677,7 +680,7 @@ class SpaceController extends Controller
     {
         $space = Space::where('slug', $slug)->first();
         if (!$space) {
-            return response()->json(['success' => false, 'message' => 'Space not found.'], 404);
+            return response()->json(['success' => false, 'message' => __('Space not found.')], 404);
         }
 
         $user = auth('sanctum')->user() ?? $request->user();
@@ -686,7 +689,7 @@ class SpaceController extends Controller
         if (!in_array($role, ['admin', 'editor'], true)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Unauthorized.',
+                'message' => __('Unauthorized.'),
             ], 403);
         }
 

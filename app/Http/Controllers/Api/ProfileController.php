@@ -24,7 +24,7 @@ class ProfileController extends Controller
         if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User not found.',
+                'message' => __('User not found.'),
             ], 404);
         }
 
@@ -104,8 +104,8 @@ class ProfileController extends Controller
         }
 
         // Supprimer l'ancienne couverture
-        if ($user->getRawOriginal('cover') && Storage::disk('public')->exists($user->getRawOriginal('cover'))) {
-            Storage::disk('public')->delete($user->getRawOriginal('cover'));
+        if ($user->getRawOriginal('cover') && Storage::disk(config('filesystems.media', 'public'))->exists($user->getRawOriginal('cover'))) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($user->getRawOriginal('cover'));
         }
 
         // Générer un nom unique pour le fichier
@@ -114,7 +114,7 @@ class ProfileController extends Controller
         
         // Déterminer le dossier de stockage
         $folder = $coverType === 'image' ? 'covers/images' : 'covers/videos';
-        $path = $file->storeAs($folder, $filename, 'public');
+        $path = $file->storeAs($folder, $filename, config('filesystems.media', 'public'));
 
         $user->update([
             'cover' => $path,
@@ -123,7 +123,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cover updated successfully.',
+            'message' => __('Cover updated successfully.'),
             'data' => [
                 'cover_url' => $user->cover_url,
                 'cover_type' => $coverType,
@@ -142,19 +142,19 @@ class ProfileController extends Controller
             'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
         ]);
 
-        if ($user->getRawOriginal('avatar') && Storage::disk('public')->exists($user->getRawOriginal('avatar'))) {
-            Storage::disk('public')->delete($user->getRawOriginal('avatar'));
+        if ($user->getRawOriginal('avatar') && Storage::disk(config('filesystems.media', 'public'))->exists($user->getRawOriginal('avatar'))) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($user->getRawOriginal('avatar'));
         }
 
         $file = $request->file('avatar');
         $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs('avatars', $filename, 'public');
+        $path = $file->storeAs('avatars', $filename, config('filesystems.media', 'public'));
 
         $user->update(['avatar' => $path]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Avatar updated successfully.',
+            'message' => __('Avatar updated successfully.'),
             'data' => [
                 'avatar_url' => $user->avatar_url,
             ]
@@ -182,7 +182,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Profile updated successfully.',
+            'message' => __('Profile updated successfully.'),
             'data' => [
                 'user' => $user->fresh(),
             ]
@@ -196,15 +196,15 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if ($user->getRawOriginal('avatar') && Storage::disk('public')->exists($user->getRawOriginal('avatar'))) {
-            Storage::disk('public')->delete($user->getRawOriginal('avatar'));
+        if ($user->getRawOriginal('avatar') && Storage::disk(config('filesystems.media', 'public'))->exists($user->getRawOriginal('avatar'))) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($user->getRawOriginal('avatar'));
         }
 
         $user->update(['avatar' => null]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Avatar removed successfully.',
+            'message' => __('Avatar removed successfully.'),
         ]);
     }
 
@@ -215,8 +215,8 @@ class ProfileController extends Controller
     {
         $user = $request->user();
 
-        if ($user->getRawOriginal('cover') && Storage::disk('public')->exists($user->getRawOriginal('cover'))) {
-            Storage::disk('public')->delete($user->getRawOriginal('cover'));
+        if ($user->getRawOriginal('cover') && Storage::disk(config('filesystems.media', 'public'))->exists($user->getRawOriginal('cover'))) {
+            Storage::disk(config('filesystems.media', 'public'))->delete($user->getRawOriginal('cover'));
         }
 
         $user->update([
@@ -226,7 +226,7 @@ class ProfileController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Cover removed successfully.',
+            'message' => __('Cover removed successfully.'),
         ]);
     }
 }

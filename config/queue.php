@@ -40,7 +40,8 @@ return [
             'connection' => env('DB_QUEUE_CONNECTION'),
             'table' => env('DB_QUEUE_TABLE', 'jobs'),
             'queue' => env('DB_QUEUE', 'default'),
-            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 90),
+            // Plus long que la tâche la plus longue (5 min) : une tâche en cours n'est jamais relancée en double
+            'retry_after' => (int) env('DB_QUEUE_RETRY_AFTER', 330),
             'after_commit' => false,
         ],
 

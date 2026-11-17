@@ -1,0 +1,19 @@
+Vidéo de fond de la page de connexion (grand écran uniquement)
+==============================================================
+
+C'est une suite de courts plans de talents (environ 4 secondes chacun), qui tourne en boucle.
+Elle ne se charge qu'après l'affichage du formulaire, un clip à la fois, et jamais en mode
+économie de données ni en connexion 2G. Sur téléphone, aucune vidéo n'est chargée.
+
+Par défaut : 4 clips Mixkit en 360p (licence gratuite Mixkit), lus depuis leur site :
+  45547  homme jouant d'un tambour africain
+  40623  jeune homme qui chante et danse dans un salon de coiffure
+  48365  pêcheurs africains qui dansent sur un bateau
+  45452  homme qui danse sur fond bleu
+
+Pour mettre TES clips (recommandé : de vrais talents de chez nous) :
+  dépose-les dans public/videos/talents/  (01.mp4, 02.mp4, 03.mp4… lus dans l'ordre du nom)
+  - MP4 (H.264), 640x360, 4 à 6 secondes, sans son, environ 300 Ko chacun
+  - commande pour en préparer un :
+    ffmpeg -i source.mp4 -t 5 -an -vf scale=640:-2 -c:v libx264 -crf 30 -preset slow -movflags +faststart 01.mp4
+Dès qu'il y a au moins un fichier dans ce dossier, les clips Mixkit ne sont plus utilisés.

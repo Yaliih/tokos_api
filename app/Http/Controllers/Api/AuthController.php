@@ -45,7 +45,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to fetch preferences.',
+                'message' => __('Failed to fetch preferences.'),
             ], 500);
         }
     }
@@ -58,7 +58,7 @@ class AuthController extends Controller
 
         if (! Auth::guard('web')->attempt($credentials, $remember)) {
             throw ValidationException::withMessages([
-                'phone_number' => ['Invalid phone number or password.'],
+                'phone_number' => ['Numéro ou mot de passe incorrect.'],
             ]);
         }
 
@@ -73,7 +73,7 @@ class AuthController extends Controller
             $request->session()->regenerateToken();
 
             throw ValidationException::withMessages([
-                'phone_number' => ['This account has been disabled.'],
+                'phone_number' => ['Ce compte est désactivé.'],
             ]);
         }
 
@@ -81,7 +81,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Login successful.',
+            'message' => __('Login successful.'),
             'data' => [
                 'user' => $user->load('preferences'),
                 'requires_phone_verification' => ! $user->hasVerifiedPhone(),
@@ -99,13 +99,13 @@ class AuthController extends Controller
 
         if (! $user || ! $user->validatePassword($request->password)) {
             throw ValidationException::withMessages([
-                'phone_number' => ['Invalid phone number or password.'],
+                'phone_number' => ['Numéro ou mot de passe incorrect.'],
             ]);
         }
 
         if (! $user->is_active) {
             throw ValidationException::withMessages([
-                'phone_number' => ['This account has been disabled.'],
+                'phone_number' => ['Ce compte est désactivé.'],
             ]);
         }
 
@@ -113,7 +113,7 @@ class AuthController extends Controller
 
         if ($deviceName === '') {
             throw ValidationException::withMessages([
-                'device_name' => ['The device name is required for mobile login.'],
+                'device_name' => [__('The device name is required for mobile login.')],
             ]);
         }
 
@@ -124,7 +124,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Login successful.',
+            'message' => __('Login successful.'),
             'data' => [
                 'user' => $user->load('preferences'),
                 'token' => $token,
@@ -137,14 +137,16 @@ class AuthController extends Controller
     /** Inscription web SPA : crée l'utilisateur puis ouvre une session. */
     public function webRegister(RegisterRequest $request): JsonResponse
     {
+        app(\App\Services\Competition\AntiFraud::class)->checkSignup();
         $user = $this->createUserFromRegistration($request);
+        app(\App\Services\Competition\AntiFraud::class)->markSignup($user);
 
         Auth::guard('web')->login($user);
         $request->session()->regenerate();
 
         return response()->json([
             'success' => true,
-            'message' => 'Registration successful.',
+            'message' => 'Compte créé.',
             'data' => [
                 'user' => $user->load('preferences'),
                 'requires_phone_verification' => false,
@@ -155,7 +157,9 @@ class AuthController extends Controller
     /** Inscription mobile : crée l'utilisateur puis retourne un token. */
     public function mobileRegister(RegisterRequest $request): JsonResponse
     {
+        app(\App\Services\Competition\AntiFraud::class)->checkSignup();
         $user = $this->createUserFromRegistration($request);
+        app(\App\Services\Competition\AntiFraud::class)->markSignup($user);
         $deviceName = trim((string) $request->input('device_name'));
 
         if ($deviceName === '') {
@@ -166,7 +170,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Registration successful.',
+            'message' => 'Compte créé.',
             'data' => [
                 'user' => $user->load('preferences'),
                 'token' => $token,
@@ -184,7 +188,7 @@ class AuthController extends Controller
 
         if (User::where('phone_code', $phoneCode)->where('phone_number', $phoneNumber)->exists()) {
             throw ValidationException::withMessages([
-                'phone_number' => ['This phone number is already registered. Please login instead.'],
+                'phone_number' => ['Ce numéro a déjà un compte. Connecte-toi.'],
             ]);
         }
 
@@ -196,28 +200,25 @@ class AuthController extends Controller
             'phone_code' => $phoneCode,
             'phone_number' => $phoneNumber,
             'code' => $code,
-            'expires_at' => now()->addMinutes(2),
+            'expires_at' => now()->addMinutes((int) config('messaging.code_ttl', 10)),
             'is_used' => false,
             'attempts' => 0,
         ]);
 
-        $sent = $this->smsService->send(
-            $fullPhone,
-            "Your Tokos verification code is: {$code}. Valid for 2 minutes."
-        );
+        $sent = app(\App\Services\Messaging\Messenger::class)->sendCode($fullPhone, $code);
 
         if (! $sent) {
             $verificationCode->delete();
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send verification code. Please try again.',
+                'message' => 'Le code n\'a pas pu être envoyé. Réessaie.',
             ], 500);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'Verification code sent successfully.',
+            'message' => 'Code envoyé.',
             'data' => [
                 'id' => $verificationCode->id,
                 'phone_code' => $phoneCode,
@@ -237,7 +238,7 @@ class AuthController extends Controller
             if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Phone number is required.',
+                    'message' => __('Phone number is required.'),
                 ], 422);
             }
 
@@ -247,7 +248,7 @@ class AuthController extends Controller
 
         if (User::where('phone_code', $phoneCode)->where('phone_number', $phoneNumber)->exists()) {
             throw ValidationException::withMessages([
-                'phone_number' => ['This phone number is already registered. Please login instead.'],
+                'phone_number' => ['Ce numéro a déjà un compte. Connecte-toi.'],
             ]);
         }
 
@@ -259,28 +260,25 @@ class AuthController extends Controller
             'phone_code' => $phoneCode,
             'phone_number' => $phoneNumber,
             'code' => $code,
-            'expires_at' => now()->addMinutes(2),
+            'expires_at' => now()->addMinutes((int) config('messaging.code_ttl', 10)),
             'is_used' => false,
             'attempts' => 0,
         ]);
 
-        $sent = $this->smsService->send(
-            $phoneCode.$phoneNumber,
-            "Your Tokos verification code is: {$code}. Valid for 2 minutes."
-        );
+        $sent = app(\App\Services\Messaging\Messenger::class)->sendCode($phoneCode.$phoneNumber, $code);
 
         if (! $sent) {
             $verificationCode->delete();
 
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send verification code. Please try again.',
+                'message' => 'Le code n\'a pas pu être envoyé. Réessaie.',
             ], 500);
         }
 
         return response()->json([
             'success' => true,
-            'message' => 'New verification code sent successfully.',
+            'message' => __('New verification code sent successfully.'),
             'data' => [
                 'id' => $verificationCode->id,
                 'phone_code' => $phoneCode,
@@ -296,11 +294,11 @@ class AuthController extends Controller
         $user = $request->user();
 
         if (! $user) {
-            return response()->json(['success' => false, 'message' => 'Unauthenticated.'], 401);
+            return response()->json(['success' => false, 'message' => __('Unauthenticated.')], 401);
         }
 
         if ($user->hasVerifiedPhone()) {
-            return response()->json(['success' => false, 'message' => 'Phone already verified.'], 400);
+            return response()->json(['success' => false, 'message' => __('Phone already verified.')], 400);
         }
 
         $verificationCode = VerificationCode::where('phone_code', $user->phone_code)
@@ -312,20 +310,20 @@ class AuthController extends Controller
         if (! $verificationCode) {
             $this->logFailedAttempt($user->phone_code, $user->phone_number);
             throw ValidationException::withMessages([
-                'verification_code' => ['Invalid verification code.'],
+                'verification_code' => [__('Invalid verification code.')],
             ]);
         }
 
         if (! $verificationCode->isValid()) {
             throw ValidationException::withMessages([
-                'verification_code' => ['Verification code expired. Please request a new one.'],
+                'verification_code' => [__('Verification code expired. Please request a new one.')],
             ]);
         }
 
         if ($verificationCode->attempts >= 3) {
             $verificationCode->delete();
             throw ValidationException::withMessages([
-                'verification_code' => ['Too many failed attempts. Please request a new code.'],
+                'verification_code' => [__('Too many failed attempts. Please request a new code.')],
             ]);
         }
 
@@ -335,7 +333,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Phone verified successfully!',
+            'message' => __('Phone verified successfully!'),
             'data' => ['user' => $user->fresh()->load('preferences')],
         ]);
     }
@@ -349,7 +347,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logged out successfully.',
+            'message' => __('Logged out successfully.'),
         ]);
     }
 
@@ -364,7 +362,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Logged out successfully.',
+            'message' => __('Logged out successfully.'),
         ]);
     }
 
@@ -385,7 +383,7 @@ class AuthController extends Controller
         if (isset($data['username']) && $user->username_changed) {
             return response()->json([
                 'success' => false,
-                'message' => 'You can only change your username once.',
+                'message' => __('You can only change your username once.'),
             ], 422);
         }
 
@@ -394,11 +392,11 @@ class AuthController extends Controller
         }
 
         if ($request->hasFile('avatar')) {
-            $data['avatar'] = $request->file('avatar')->store('avatars', 'public');
+            $data['avatar'] = $request->file('avatar')->store('avatars', config('filesystems.media', 'public'));
         }
 
         if ($request->hasFile('photo')) {
-            $data['photo'] = $request->file('photo')->store('photos', 'public');
+            $data['photo'] = $request->file('photo')->store('photos', config('filesystems.media', 'public'));
         }
 
         $user->update($data);
@@ -409,7 +407,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Profile updated successfully.',
+            'message' => __('Profile updated successfully.'),
             'data' => ['user' => $user->fresh()->load('preferences')],
         ]);
     }
@@ -422,7 +420,7 @@ class AuthController extends Controller
 
         if (! $user) {
             throw ValidationException::withMessages([
-                'phone_number' => ['No account found with this number.'],
+                'phone_number' => [__('No account found with this number.')],
             ]);
         }
 
@@ -434,7 +432,7 @@ class AuthController extends Controller
 
         if (! $verificationCode || ! $verificationCode->isValid()) {
             throw ValidationException::withMessages([
-                'verification_code' => ['Invalid or expired verification code.'],
+                'verification_code' => ['Code invalide ou expiré.'],
             ]);
         }
 
@@ -446,7 +444,7 @@ class AuthController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Password reset successfully.',
+            'message' => __('Password reset successfully.'),
         ]);
     }
 
@@ -474,7 +472,7 @@ class AuthController extends Controller
                 ->where('phone_number', $request->phone_number)
                 ->exists()) {
                 throw ValidationException::withMessages([
-                    'phone_number' => ['This phone number is already registered.'],
+                    'phone_number' => ['Ce numéro a déjà un compte.'],
                 ]);
             }
 
@@ -486,7 +484,7 @@ class AuthController extends Controller
 
             if (! $verificationCode || ! $verificationCode->isValid()) {
                 throw ValidationException::withMessages([
-                    'verification_code' => ['Invalid or expired verification code.'],
+                    'verification_code' => ['Code invalide ou expiré.'],
                 ]);
             }
 
@@ -499,6 +497,8 @@ class AuthController extends Controller
                 'password' => Hash::make($request->password),
                 'birth_date' => $request->birth_date,
                 'gender' => $request->gender,
+                // Goûts choisis à l'inscription (mêmes disciplines que le site)
+                'interests' => array_values(array_intersect((array) $request->input('interests', []), array_keys(config('competition.categories')))) ?: null,
             ]);
 
             if ($request->filled('preferences')) {
@@ -521,7 +521,7 @@ class AuthController extends Controller
 
         if ($recentAttempts >= 5) {
             throw ValidationException::withMessages([
-                'phone_number' => ['Too many attempts. Please try again in 1 hour.'],
+                'phone_number' => [__('Too many attempts. Please try again in 1 hour.')],
             ]);
         }
 

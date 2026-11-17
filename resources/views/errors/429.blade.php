@@ -1,0 +1,1 @@
+@include('errors.layout', ['heading' => 'Doucement', 'text' => 'Trop d\'essais en peu de temps. Patiente une minute, puis réessaie.', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>'])
