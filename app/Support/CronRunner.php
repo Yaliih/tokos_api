@@ -73,12 +73,18 @@ class CronRunner
         try {
             @set_time_limit(90);
             app()->instance('cron.http', true); // la file est vidée juste après, pas besoin d'un 2e « queue:work »
-            Artisan::call('schedule:run');
+            try {
+                Artisan::call('schedule:run');
+            } catch (\Throwable $e) {
+                // Une tâche planifiée qui échoue ne doit pas empêcher la file d'attente de se vider
+                $error = 'planificateur : '.mb_substr($e->getMessage(), 0, 200);
+                report($e);
+            }
             $before = self::pendingJobs();
             Artisan::call('queue:work', ['--stop-when-empty' => true, '--max-time' => 20, '--tries' => 3, '--quiet' => true]);
             $jobs = max(0, $before - self::pendingJobs());
         } catch (\Throwable $e) {
-            $error = mb_substr($e->getMessage(), 0, 300);
+            $error = ($error ? $error.' / ' : '').mb_substr($e->getMessage(), 0, 300);
             report($e);
         } finally {
             $lock->release();

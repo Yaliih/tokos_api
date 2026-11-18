@@ -68,7 +68,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="{{ asset('css/tokos.css') }}?v=84">
+    <link rel="stylesheet" href="{{ asset('css/tokos.css') }}?v={{ filemtime(public_path('css/tokos.css')) }}">
     {{-- Navigation instantanée : la page suivante est préchargée quand le doigt touche le lien (pas en économie de données) --}}
     <script type="speculationrules">
     {"prerender": [{"where": {"and": [{"selector_matches": ".mobile-nav a, .sidenav a.nav-link"}, {"not": {"href_matches": ["/deconnexion", "/admin*"]}}]}, "eagerness": "moderate"}],
@@ -222,7 +222,7 @@
     </form>
 </dialog>
 @endauth
-<script src="{{ asset('js/tokos.js') }}?v=87" defer></script>
+<script src="{{ asset('js/tokos.js') }}?v={{ filemtime(public_path('js/tokos.js')) }}" defer></script>
 @feature('comments')
 {{-- Commentaires de n'importe quelle publication : une fenêtre qui monte du bas, comme sur TikTok --}}
 <dialog class="sheet comments-sheet" id="comments-sheet" aria-labelledby="cs-title">

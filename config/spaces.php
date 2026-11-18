@@ -2,10 +2,24 @@
 
 // Catégories d'Espace, puis une sous-catégorie facultative.
 // « education » = les institutions : leurs membres peuvent les choisir sur leur profil, et leurs points comptent pour elles.
+
+// Adresse propre à chaque Espace : lions.sosa.social.
+// 1. SPACE_DOMAIN s'il est réglé (jamais localhost ni une IP) ;
+// 2. sinon le domaine de APP_URL : en production (APP_URL=https://sosa.social) chaque Espace a donc
+//    automatiquement son adresse « slug.sosa.social » ; sur localhost les adresses restent désactivées.
+// Il faut un DNS « *.sosa.social » vers le serveur, un certificat HTTPS pour *.sosa.social,
+// SESSION_DOMAIN=.sosa.social, et la fonction « Sites d'Espaces » ouverte dans l'admin.
+$spaceHost = '';
+foreach ([env('SPACE_DOMAIN'), parse_url((string) env('APP_URL'), PHP_URL_HOST)] as $candidate) {
+    $candidate = strtolower(trim((string) $candidate));
+    if ($candidate !== '' && ! in_array($candidate, ['localhost', '127.0.0.1', '::1'], true) && ! filter_var($candidate, FILTER_VALIDATE_IP)) {
+        $spaceHost = $candidate;
+        break;
+    }
+}
+
 return [
-    // Adresse propre à chaque Espace : lions.sosa.social. Laisser vide pour désactiver.
-    // Il faut un DNS « *.sosa.social » vers le serveur, un certificat HTTPS pour *.sosa.social, et SESSION_DOMAIN=.sosa.social.
-    'domain' => env('SPACE_DOMAIN'),
+    'domain' => $spaceHost ?: null,
     'reserved_subdomains' => ['www', 'admin', 'api', 'app', 'mail', 'smtp', 'ftp', 'cdn', 'static', 'media', 'm', 'blog', 'aide', 'support', 'status'],
 
     'categories' => [
