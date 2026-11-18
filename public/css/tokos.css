@@ -2934,3 +2934,53 @@ a.mention:hover { text-decoration: underline; }
   .wave-play { width: 32px; height: 32px; }
   .wave-time { font-size: .72rem; }
 }
+
+/* ══ Lancer un défi / duel / concours / tournoi : plus compact ══════════════
+   Sur téléphone, la page respirait trop : marges de la carte, des champs, des
+   listes d'options et des titres sont resserrées pour voir l'essentiel d'un coup. */
+@media (max-width: 760px) {
+  .main > .wizard { margin-left: -12px; margin-right: -12px; }
+  .wizard #create-form { border-radius: 0; border-left: 0; border-right: 0; }
+}
+@media (max-width: 560px) {
+  .wizard-head { margin-bottom: 6px; }
+  .wizard-head h1 { font-size: 1.2rem; margin-top: 2px !important; }
+  .wizard .steps { margin-top: 6px; gap: 4px; }
+  .wizard .steps li span:not(.bar) { display: none; }
+  .wizard #create-form { padding: 12px 12px 0; }
+  .wizard .step h2 { font-size: 1.05rem; }
+  .wizard .step .lead { font-size: .84rem; margin-bottom: 8px; }
+  .wizard .step-label { margin: 0 0 6px; font-size: .8rem; }
+  .wizard .field { margin-bottom: 9px; }
+  .wizard .field > span { font-size: .8rem; margin-bottom: 4px; }
+  .wizard .input { padding: 9px 12px; }
+  .wizard .note { padding: 9px 11px; font-size: .8rem; margin-bottom: 8px; }
+  .wizard .options { gap: 6px; }
+  .wizard .option .box { padding: 9px; gap: 4px; }
+  .wizard .option .box .ico { width: 20px; height: 20px; }
+  .wizard .option .box strong { font-size: .88rem; }
+  .wizard .option .box span { font-size: .75rem; }
+  .wizard .wizard-nav { margin-top: 10px; padding-top: 10px; }
+  .wizard .switch { padding: 10px 0; }
+  .qc { padding: 12px 12px 0; gap: 10px; }
+  .qc-chips { margin: 0 -12px; padding: 0 12px; }
+}
+
+/* ══ « Ta performance » : la zone du média, plus douce et mieux cadrée ═════ */
+.picker { border-radius: 16px; }
+.picker-empty { padding: 14px; gap: 8px; }
+.picker-label { font-size: .95rem; }
+.picker-empty small { font-size: .76rem; line-height: 1.35; }
+.picker-kinds .picker-btn { background: var(--surface); }
+.picker-kinds .picker-btn:hover { background: var(--primary-soft); }
+.picker.has-file .picker-info { padding: 8px 10px; }
+@media (max-width: 560px) {
+  .picker-empty { padding: 12px; gap: 7px; }
+  .picker-kinds .picker-btn { min-height: 60px; padding: 9px 4px; font-size: .78rem; }
+  .picker-how-group .picker-btn { height: 44px; }
+}
+
+/* « Ta performance » : une petite tuile d'icône devant le titre, pour un bloc plus lisible */
+.picker-head { display: inline-flex; align-items: center; gap: 9px; }
+.picker-tile { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+.picker-tile .ico { width: 17px; height: 17px; }

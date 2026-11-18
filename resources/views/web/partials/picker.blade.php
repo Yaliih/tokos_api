@@ -30,7 +30,10 @@
         </div>
     @endif
     <div class="picker-empty">
-        <span class="picker-label">{{ $label ?? 'Ajouter un média' }}@if(($required ?? false) || !empty($requiredFor)) <em @if(!empty($requiredFor)) data-for="{{ $requiredFor }}" @endif>obligatoire</em>@endif</span>
+        <span class="picker-head">
+            <span class="picker-tile" aria-hidden="true">@icon('upload')</span>
+            <span class="picker-label">{{ $label ?? 'Ajouter un média' }}@if(($required ?? false) || !empty($requiredFor)) <em @if(!empty($requiredFor)) data-for="{{ $requiredFor }}" @endif>obligatoire</em>@endif</span>
+        </span>
         {{-- D'abord le format (Vidéo, Audio, Photo, et Texte s'il est proposé), puis comment : filmer / enregistrer / prendre, ou importer --}}
         <div class="picker-btns picker-kinds" data-kind-btns>
             @foreach (array_values(array_filter(['video', 'audio', 'image'], fn ($k) => in_array($k, $kinds, true))) as $t)
