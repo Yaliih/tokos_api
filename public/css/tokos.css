@@ -2985,3 +2985,24 @@ a.mention:hover { text-decoration: underline; }
 .picker-head { display: inline-flex; align-items: center; gap: 9px; }
 .picker-tile { flex: none; width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
 .picker-tile .ico { width: 17px; height: 17px; }
+
+/* ── Modifier le profil : des blocs qu'on ouvre un par un ─────────────
+   Identité, Préférences, Bio : on ne voit que ce qu'on vient modifier. */
+.edit-forms { padding: 14px 18px 4px; display: grid; gap: 10px; }
+.pedit { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); overflow: hidden; }
+.pedit > summary { display: flex; align-items: center; gap: 10px; padding: 13px 14px; cursor: pointer; list-style: none; font-weight: 800; }
+.pedit > summary::-webkit-details-marker { display: none; }
+.pedit > summary::after { content: ""; width: 9px; height: 9px; margin-left: auto; border-right: 2px solid var(--text-3); border-bottom: 2px solid var(--text-3); rotate: 45deg; transition: rotate .15s; flex: none; }
+.pedit[open] > summary::after { rotate: -135deg; }
+.pedit .pedit-t { display: inline-flex; align-items: center; gap: 8px; }
+.pedit .pedit-t .ico { color: var(--primary); }
+.pedit .pedit-hint { color: var(--text-3); font-weight: 600; font-size: .8rem; margin-left: 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pedit[open] > summary { border-bottom: 1px solid var(--border); }
+.pedit-body { padding: 14px 14px 2px; }
+.pedit-body .field:last-child { margin-bottom: 8px; }
+@media (max-width: 560px) {
+  .edit-forms { padding: 12px 12px 2px; gap: 8px; }
+  .pedit > summary { padding: 12px; }
+  .pedit .pedit-hint { display: none; }
+  .pedit-body { padding: 12px 12px 0; }
+}
