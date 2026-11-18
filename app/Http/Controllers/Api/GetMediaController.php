@@ -24,7 +24,8 @@ class GetMediaController extends Controller
         $root = realpath(storage_path('app/public'));
         $full = $root ? realpath($root.DIRECTORY_SEPARATOR.$path) : false;
         if ($root && $full && str_starts_with($full, $root.DIRECTORY_SEPARATOR) && is_file($full)) {
-            return response()->file($full, ['Cache-Control' => 'public, max-age=604800']);
+            // Le nom du fichier est aléatoire et ne change jamais : on peut le garder un an côté navigateur
+            return response()->file($full, ['Cache-Control' => 'public, max-age=31536000, immutable']);
         }
 
         // Pas sur le serveur : chez R2 (lien temporaire de redirection, pas « définitif », on peut changer d'avis)

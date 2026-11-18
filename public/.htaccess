@@ -29,3 +29,19 @@
         Header set Cache-Control "no-cache, max-age=0, must-revalidate"
     </FilesMatch>
 </IfModule>
+# ── Réseau lent : on compresse le texte et on garde les fichiers en cache ──
+# Le CSS fait ~220 Ko et le JS ~165 Ko : compressés, c'est ~35 Ko et ~45 Ko.
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml text/javascript application/javascript application/json application/manifest+json image/svg+xml
+</IfModule>
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType image/png "access plus 6 months"
+    ExpiresByType image/jpeg "access plus 6 months"
+    ExpiresByType image/webp "access plus 6 months"
+    ExpiresByType image/svg+xml "access plus 6 months"
+    ExpiresByType font/woff2 "access plus 1 year"
+    ExpiresByType application/manifest+json "access plus 1 hour"
+</IfModule>

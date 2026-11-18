@@ -426,6 +426,53 @@
   });
   syncSaver();
 
+  // ── Envoi des formulaires avec fichier : en une seule requête, avec la progression ──
+  // Le fichier allégé sur le téléphone est envoyé tel quel (jamais réinjecté dans le champ,
+  // ce qui provoque « ERR_UPLOAD_FILE_CHANGED » sur certains téléphones et en PWA).
+  const lightFiles = new WeakMap(); // champ fichier -> fichier allégé à envoyer
+
+  document.addEventListener('submit', (e) => {
+    const form = e.target;
+    if (!(form instanceof HTMLFormElement) || e.defaultPrevented) return;
+    const inputs = Array.from(form.querySelectorAll('input[type=file]')).filter((i) => !i.disabled && (lightFiles.has(i) || (i.files && i.files.length)));
+    if (!inputs.length) return;
+    if (form.dataset.sending) { e.preventDefault(); return; }
+
+    e.preventDefault();
+    form.dataset.sending = '1';
+    const btn = form.querySelector('button[type=submit], button:not([type])');
+    if (btn) btn.disabled = true;
+
+    const body = new FormData(form);
+    inputs.forEach((i) => {
+      const f = lightFiles.get(i) || (i.files && i.files[0]);
+      if (f) body.set(i.name || 'file', f, f.name || 'fichier');
+    });
+
+    const xhr = new XMLHttpRequest();
+    let last = 0;
+    const done = (ok, msg) => {
+      form.dataset.sending = '';
+      if (btn) btn.disabled = false;
+      if (!ok && msg) toast(msg, true);
+    };
+    xhr.open('POST', form.action || location.href, true);
+    xhr.withCredentials = true;
+    xhr.timeout = 0; // un gros fichier sur réseau lent peut prendre longtemps
+    xhr.upload.onprogress = (ev) => {
+      if (!ev.lengthComputable) return;
+      const pct = Math.round(ev.loaded / ev.total * 100);
+      if (pct >= 100 || pct - last >= 15) { last = pct; toast(pct >= 100 ? 'Envoi terminé, traitement…' : 'Envoi ' + pct + ' %'); }
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 400 && xhr.status !== 422) { done(false, 'Envoi refusé (' + xhr.status + '). Réessaie.'); return; }
+      // Après l'envoi, on ouvre la page de destination (elle montre le résultat ou les erreurs)
+      location.assign(xhr.responseURL || form.action || location.href);
+    };
+    xhr.onerror = () => done(false, 'Réseau trop faible : l\'envoi a échoué. Réessaie quand le réseau revient.');
+    xhr.ontimeout = () => done(false, 'L\'envoi a pris trop de temps. Réessaie.');
+    xhr.send(body);
+  });
   // ── Modifier le profil : aperçu des images choisies ───────────
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-preview-pick]');
@@ -443,15 +490,26 @@
       const f = e.target.files && e.target.files[0];
       const box = e.target.closest('[data-preview]').querySelector('[data-preview-box]');
       if (!f || !box) return;
-      // Limites réglées dans l'admin, vérifiées dès le choix du fichier
+      // Une photo est d'abord allégée (elle partira allégée), puis on l'affiche tout de suite :
+      // l'aperçu ne doit jamais rester vide, même si le fichier est trop lourd pour le serveur.
+      let send = f;
+      if (f.type.startsWith('image/') && f.type !== 'image/gif') {
+        const small = await shrinkImage(f);
+        if (small && small !== f) { send = small; lightFiles.set(e.target, small); }
+      }
       const maxMb = +e.target.dataset.maxMb || 50;
-      if (f.size > maxMb * 1048576) { toast('Fichier trop lourd : ' + maxMb + ' Mo maximum.', true); e.target.value = ''; return; }
+      if (send.size > maxMb * 1048576) {
+        toast('Photo trop lourde (' + fmtSize(send.size) + ') : ' + maxMb + ' Mo maximum. Choisis-en une autre.', true);
+        e.target.value = '';
+        lightFiles.delete(e.target);
+        return;
+      }
       const maxSec = +e.target.dataset.maxVideo || 0;
       if (maxSec && f.type.startsWith('video/')) {
         const d = await videoSeconds(f);
         if (d && d > maxSec + 1) { toast('Vidéo trop longue (' + Math.round(d) + ' s) : ' + maxSec + ' s maximum. Choisis-en une plus courte.', true); e.target.value = ''; return; }
       }
-      const url = URL.createObjectURL(f);
+      const url = URL.createObjectURL(send);
       box.innerHTML = '';
       const el = document.createElement(f.type.startsWith('video/') ? 'video' : 'img');
       el.src = url; if (el.tagName === 'VIDEO') { el.muted = true; el.loop = true; el.autoplay = true; el.playsInline = true; }
@@ -939,12 +997,13 @@
       return fail(allowed.length === 1 ? 'Ici, il faut ' + names[allowed[0]] + ', le même format que le défi.' : 'Ce type de fichier n\'est pas accepté ici.');
     }
 
-    // Photo : allégée sur le téléphone avant l'envoi (moins de données, envoi plus rapide)
+    // Photo : une version allégée sert à l'aperçu seulement. On ne remplace PAS le fichier du
+    // champ (input.files) : sur certains téléphones et en PWA, ce remplacement fait échouer
+    // l'envoi (« Impossible d'accéder à votre fichier… ERR_UPLOAD_FILE_CHANGED »).
+    // Le fichier d'origine part au serveur, qui l'allège lui-même.
     if (kind === 'image' && file.type !== 'image/gif') {
       const small = await shrinkImage(file);
-      if (small && small !== file) {
-        try { const dt = new DataTransfer(); dt.items.add(small); input.files = dt.files; file = small; } catch (e) { /* on garde l'original */ }
-      }
+      if (small && small !== file) { file = small; lightFiles.set(input, small); } // aperçu + envoi allégé
     }
 
     const maxMb = +picker.dataset.maxMb || 0;
