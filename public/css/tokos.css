@@ -2898,3 +2898,13 @@ a.mention:hover { text-decoration: underline; }
 .chip-opt span, .chip-opt-btn { max-width: 100%; height: auto; min-height: 38px; padding: 7px 16px; line-height: 1.25; white-space: normal; text-align: left; }
 .auth, .auth-form, .wizard, .step { max-width: 100%; }
 .auth-form { overflow-x: clip; }
+
+/* ── Boutons des médias : compacts et pleine largeur sur petit écran ───
+   Comme dans une app native : une ligne par action, libellés courts. */
+.picker-btn { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 560px) {
+  .picker-how-group { flex-direction: column; gap: 8px; }
+  .picker-how-group .picker-btn { flex: 1 1 auto; width: 100%; justify-content: flex-start; height: 48px; padding: 0 18px; border-radius: 14px; font-size: .95rem; }
+  .picker-kinds .picker-btn { min-height: 72px; }
+  .picker-back { align-self: center; }
+}

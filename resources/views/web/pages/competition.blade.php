@@ -113,7 +113,7 @@
         @if ($c['prize_proof']['text'])<p class="pp-text">{!! \App\Support\Mentions::html($c['prize_proof']['text'], $c['prize_proof']['mentions'] ?? []) !!}</p>@endif
         <div class="pp-media">@include('web.partials.media', ['media' => $c['prize_proof']['media']])</div>
         @if (!empty($c['can_publish_prize']))
-            <details class="pp-again"><summary>Remplacer la vidéo</summary>@include('web.partials.prize-proof-form', ['c' => $c])</details>
+            <details class="pp-again"><summary>Remplacer</summary>@include('web.partials.prize-proof-form', ['c' => $c])</details>
         @endif
     </section>
 @elseif (!empty($c['can_publish_prize']))
@@ -479,7 +479,7 @@
             <button type="button" class="link-act faint" data-report-open="competition:{{ $c['id'] }}" style="margin-top:18px">@icon('flag', 'ico-sm')Signaler</button>
         </section>
         @if ($c['participation_mode'] !== 'individual' && auth()->check())
-            <a class="btn btn-soft btn-block" href="?tab=propositions" style="margin-top:14px">@icon('sparkles', 'ico-sm')Représenter mon Espace</a>
+            <a class="btn btn-soft btn-block" href="?tab=propositions" style="margin-top:14px">@icon('sparkles', 'ico-sm')Représenter</a>
         @endif
     </div>
 </dialog>

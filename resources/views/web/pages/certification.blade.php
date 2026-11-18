@@ -80,7 +80,7 @@
             <textarea class="input" name="note" maxlength="600" rows="2">{{ old('note') }}</textarea></label>
 
         <p class="faint small" style="margin:4px 0 14px">Tes documents restent privés : seule l'équipe Sosa les voit, et ils sont supprimés {{ config('certification.keep_documents_days') }} jours après la décision.</p>
-        <button class="btn btn-lg btn-block">@icon('send', 'ico-sm')Envoyer ma demande</button>
+        <button class="btn btn-lg btn-block">@icon('send', 'ico-sm')Envoyer</button>
     </form>
     @endif
 @endif

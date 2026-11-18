@@ -200,7 +200,7 @@
                             </div>
                         @endforeach
                     </div>
-                    <button type="button" class="link-btn" data-pt-add>@icon('plus', 'ico-sm')Ajouter une place ou une plage</button>
+                    <button type="button" class="link-btn" data-pt-add>@icon('plus', 'ico-sm')Ajouter une plage</button>
                     @if ($coinsOn)
                         <p class="pt-total" data-pt-total hidden>@icon('lock', 'ico-sm')<span><b data-pt-sum>0</b> coins seront bloqués dès la publication, puis envoyés aux gagnants à la fin. Ton solde : <b>{{ number_format((int) auth()->user()->coins, 0, ',', ' ') }}</b>.</span></p>
                         <p class="pt-total pt-short" data-pt-short hidden>@icon('alert', 'ico-sm')<span>Il te manque des coins. <a href="/portefeuille?section=recharger">Recharger</a></span></p>

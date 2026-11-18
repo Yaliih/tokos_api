@@ -26,7 +26,7 @@
         {{-- Texte : une zone pour écrire remplace le média --}}
         <div class="picker-text" data-picker-text hidden>
             <textarea class="input" name="{{ $textName }}" rows="3" maxlength="2000" placeholder="{{ $textPlaceholder ?? 'Ton texte' }}" disabled></textarea>
-            <button type="button" class="picker-back" data-kind-back>@icon('refresh', 'ico-sm')Changer de format</button>
+            <button type="button" class="picker-back" data-kind-back>@icon('refresh', 'ico-sm')Changer</button>
         </div>
     @endif
     <div class="picker-empty">
@@ -41,17 +41,17 @@
         <div class="picker-btns picker-how" data-kind-how hidden>
             <div class="picker-how-group" data-how="video" hidden>
                 @feature('recording')<button type="button" class="picker-btn rec" data-record="video">@icon('camera')Filmer</button>@endfeature
-                <button type="button" class="picker-btn" data-pick="video">@icon('upload')Importer une vidéo</button>
+                <button type="button" class="picker-btn" data-pick="video" aria-label="Importer une vidéo">@icon('upload')Importer</button>
             </div>
             <div class="picker-how-group" data-how="audio" hidden>
                 @feature('recording')<button type="button" class="picker-btn rec" data-record="audio">@icon('mic')Enregistrer</button>@endfeature
-                <button type="button" class="picker-btn" data-pick="audio">@icon('upload')Importer un audio</button>
+                <button type="button" class="picker-btn" data-pick="audio" aria-label="Importer un audio">@icon('upload')Importer</button>
             </div>
             <div class="picker-how-group" data-how="image" hidden>
-                <button type="button" class="picker-btn" data-pick="image" data-capture="environment">@icon('camera')Prendre une photo</button>
-                <button type="button" class="picker-btn" data-pick="image">@icon('upload')Importer une photo</button>
+                <button type="button" class="picker-btn" data-pick="image" data-capture="environment" aria-label="Prendre une photo">@icon('camera')Prendre</button>
+                <button type="button" class="picker-btn" data-pick="image" aria-label="Importer une photo">@icon('upload')Importer</button>
             </div>
-            <button type="button" class="picker-back" data-kind-back>@icon('refresh', 'ico-sm')Changer de format</button>
+            <button type="button" class="picker-back" data-kind-back>@icon('refresh', 'ico-sm')Changer</button>
         </div>
         <small>{{ $hint ?? 'Ou glisse un fichier ici.' }} 50 Mo maximum{{ $limits ? ', '.$limits : '' }}.</small>
     </div>
