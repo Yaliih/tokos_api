@@ -5,7 +5,7 @@
  * - Photos : gardées en cache (200 au plus) pour ne pas les retélécharger.
  * - Vidéos, audios, admin, envois de formulaires : jamais mis en cache.
  */
-const VERSION = 'sosa-v9';
+const VERSION = 'sosa-v10';
 const STATIC = VERSION + '-static';
 const PAGES = VERSION + '-pages';
 const IMAGES = VERSION + '-images';

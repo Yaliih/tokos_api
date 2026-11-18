@@ -10,7 +10,7 @@
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0C0C10",
-  "theme_color": "#0C0C10",
+  "theme_color": "#000000",
   "categories": [
     "social",
     "entertainment"
