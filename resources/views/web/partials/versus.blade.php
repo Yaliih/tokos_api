@@ -154,7 +154,7 @@
             @feature('comments')<a class="act-btn" href="{{ $comp['url'] }}?tab=commentaires&duel={{ $m['id'] }}" data-duel="{{ $m['id'] }}" aria-label="Commentaires">@icon('comment')<span>{{ $comp['comments_count'] ?? 0 }}</span></a>@endfeature
         @endif
         @if ($showTime)
-            @if ($m['status'] === 'voting' && $m['ends_at'])<span class="act-meta" title="Temps restant">@icon('clock')<span class="countdown" data-ends="{{ $m['ends_at'] }}"></span></span>
+            @if ($m['status'] === 'voting' && $m['ends_at'])<span class="act-meta" title="Temps restant"><span class="countdown" data-prefix="reste " data-ends="{{ $m['ends_at'] }}"></span></span>
             @elseif ($completed)<span class="act-meta done">@icon($m['is_draw'] ? 'equal' : 'flag', 'ico-sm'){{ $m['is_draw'] ? 'Match nul' : 'Fini' }}{{ ! empty($m['ended_at']) ? ' '.\App\Support\Presenter::ago($m['ended_at']) : '' }}</span>@endif
         @endif
         <span class="push"></span>

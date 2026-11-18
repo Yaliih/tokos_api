@@ -7,7 +7,7 @@
     $giftable = $order->filter(fn ($e) => ! empty($e['participant']) && ! (auth()->check() && ($e['participant']['type'] ?? '') === 'user' && (int) $e['participant']['id'] === auth()->id()));
 @endphp
 <div class="back-line"><a href="{{ $m['competition']['url'] }}">@icon('arrow-left', 'ico-sm')<span class="trunc">{{ $m['competition']['title'] }}</span></a>
-    @if ($m['status'] === 'voting' && $m['ends_at'])<span class="post-time">@icon('clock')<span class="countdown" data-ends="{{ $m['ends_at'] }}"></span></span>
+    @if ($m['status'] === 'voting' && $m['ends_at'])<span class="post-time"><span class="countdown" data-prefix="reste " data-ends="{{ $m['ends_at'] }}"></span></span>
     @elseif ($m['status'] === 'completed')<span class="post-time over">@icon('flag', 'ico-sm')Terminé</span>@endif</div>
 @if (!empty($m['viewer']['is_juror']))
     <p class="mini-note">@icon('scale', 'ico-sm')Tu es juré : ton vote compte pour le jury ({{ $m['jury']['weight'] ?? 0 }} %).</p>

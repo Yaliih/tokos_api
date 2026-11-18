@@ -18,7 +18,7 @@
             @if ($s === 'a')<span class="rp-vs">VS</span>@endif
         @endforeach
     </div>
-    <p class="rp-time">@icon('clock', 'ico-sm')<span>Envoi jusqu'au {{ \Illuminate\Support\Carbon::parse($p['submit_by'])->locale('fr')->isoFormat('D MMM à HH:mm') }} · reste <span class="countdown" data-ends="{{ $p['submit_by'] }}"></span></span></p>
+    <p class="rp-time"><span>Envoi jusqu'au {{ \Illuminate\Support\Carbon::parse($p['submit_by'])->locale('fr')->isoFormat('D MMM à HH:mm') }} · reste <span class="countdown" data-ends="{{ $p['submit_by'] }}"></span></span></p>
     <p class="rp-rule">Le duel commence dès que les deux ont envoyé. Sans envoi à temps, l'autre passe au tour suivant.</p>
 
     @if ($mine && ! $p[$mine.'_ready'])
