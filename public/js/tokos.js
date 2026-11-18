@@ -482,17 +482,49 @@
     };
     send();
   });
-  // ── Modifier le profil : la photo part tout de suite, ou se supprime après confirmation ──
-  // « Enregistrer » ne sert plus qu'aux textes (nom, pseudo…).
+  // ── Modifier le profil : on choisit, on confirme, et c'est enregistré ──
+  // Rien ne part tant qu'on n'a pas touché « ✓ » : le bouton « Enregistrer » du bas ne concerne que les textes.
   const csrfToken = () => (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+  const photoOriginal = new WeakMap(); // emplacement -> image affichée avant le choix
+
   function photoButtons(form, data) {
     const a = form.querySelector('[data-photo-remove="avatar"]');
     const c = form.querySelector('[data-photo-remove="cover"]');
     if (a) a.hidden = !data.has_avatar;
     if (c) c.hidden = !data.cover;
   }
-  function photoUpload(form, input, file) {
+  function photoBar(root, kind, show) {
+    const bar = root.closest('[data-preview]').querySelector('[data-photo-act="' + kind + '"]');
+    const del = root.closest('[data-preview]').querySelector('[data-photo-remove="' + kind + '"]');
+    if (bar) bar.hidden = !show;
+    if (del && show) del.hidden = true;
+  }
+
+  // Jolie fenêtre de confirmation (même style que les feuilles de l'app)
+  function askConfirm(title, text, okLabel) {
+    return new Promise((resolve) => {
+      const dlg = document.createElement('dialog');
+      dlg.className = 'sheet confirm-sheet';
+      dlg.innerHTML = '<div class="sheet-head"><h2>' + title + '</h2></div>'
+        + '<p class="confirm-text">' + text + '</p>'
+        + '<div class="confirm-actions">'
+        + '<button type="button" class="btn btn-ghost" data-confirm-no>Annuler</button>'
+        + '<button type="button" class="btn btn-danger" data-confirm-yes>' + okLabel + '</button>'
+        + '</div>';
+      document.body.appendChild(dlg);
+      const close = (v) => { if (dlg.open) dlg.close(); dlg.remove(); resolve(v); };
+      dlg.addEventListener('click', (e) => {
+        if (e.target.closest('[data-confirm-yes]')) close(true);
+        else if (e.target.closest('[data-confirm-no]') || e.target === dlg) close(false);
+      });
+      dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(false); });
+      dlg.showModal();
+    });
+  }
+
+  function photoUpload(form, input) {
     const url = form && form.dataset.photoUrl;
+    const file = input.files && input.files[0];
     if (!url || !file) return;
     const body = new FormData();
     body.append('_token', csrfToken());
@@ -509,7 +541,6 @@
         toast((Array.isArray(first) ? first[0] : first) || 'Photo refusée (' + xhr.status + ').', true);
         return;
       }
-      input.value = ''; // déjà enregistrée : « Enregistrer » n'a plus à la renvoyer
       const box = input.closest('[data-preview]').querySelector('[data-preview-box]');
       if (input.name === 'avatar' && data.avatar) {
         box.innerHTML = '<img src="' + data.avatar + '" alt="">';
@@ -518,19 +549,58 @@
           ? '<video src="' + data.cover + '#t=0.1" muted playsinline loop></video>'
           : '<img src="' + data.cover + '" alt="">';
       }
+      photoOriginal.delete(box);
+      form.dataset.hasAvatar = data.has_avatar ? '1' : '0';
+      form.dataset.hasCover = data.cover ? '1' : '0';
+      input.value = '';
+      photoBar(input, input.name, false);
       photoButtons(form, data);
       toast('Photo enregistrée.');
     };
-    xhr.onerror = () => toast('Réseau trop faible : la photo n\'a pas été envoyée.', true);
+    xhr.onerror = () => toast('Réseau trop faible : la photo n\'a pas été envoyée. Réessaie.', true);
     xhr.send(body);
   }
+
+  // « ✓ » : on envoie la photo choisie — « ✕ » : on garde l'ancienne
   document.addEventListener('click', (e) => {
+    const save = e.target.closest('[data-photo-save]');
+    if (save) {
+      const form = save.closest('form');
+      const input = save.closest('[data-preview]').querySelector('[data-preview-input]');
+      if (input) photoUpload(form, input);
+      return;
+    }
+    const cancel = e.target.closest('[data-photo-cancel]');
+    if (cancel) {
+      const input = cancel.closest('[data-preview]').querySelector('[data-preview-input]');
+      const box = cancel.closest('[data-preview]').querySelector('[data-preview-box]');
+      if (input) input.value = '';
+      if (box && photoOriginal.has(box)) box.innerHTML = photoOriginal.get(box);
+      photoOriginal.delete(box);
+      photoBar(cancel, cancel.dataset.photoCancel, false);
+      const form = cancel.closest('form');
+      if (form) {
+        const kind = cancel.dataset.photoCancel;
+        const del = form.querySelector('[data-photo-remove="' + kind + '"]');
+        if (del) del.hidden = (kind === 'avatar' ? form.dataset.hasAvatar : form.dataset.hasCover) !== '1';
+      }
+      toast('Changement annulé.');
+    }
+  });
+
+  // Supprimer : on demande confirmation dans une vraie fenêtre, puis on supprime
+  document.addEventListener('click', async (e) => {
     const b = e.target.closest('[data-photo-remove]');
     if (!b) return;
     const form = b.closest('form');
     const kind = b.dataset.photoRemove;
     if (!form || !form.dataset.photoUrl) return;
-    if (!confirm(kind === 'avatar' ? 'Supprimer ta photo de profil ?' : 'Supprimer ta couverture ?')) return;
+    const ok = await askConfirm(
+      kind === 'avatar' ? 'Supprimer ta photo de profil ?' : 'Supprimer ta couverture ?',
+      kind === 'avatar' ? 'Ton profil reprendra l\'image par défaut.' : 'Ta page reprendra une couverture vide.',
+      'Supprimer'
+    );
+    if (!ok) return;
     const body = new FormData();
     body.append('_token', csrfToken());
     body.append('remove', kind);
@@ -545,6 +615,8 @@
           box.innerHTML = '<span class="edit-cover-empty">Ajoute une photo ou une courte vidéo</span>';
         }
         photoButtons(form, data);
+        form.dataset.hasAvatar = data.has_avatar ? '1' : '0';
+        form.dataset.hasCover = data.cover ? '1' : '0';
         toast('Supprimé.');
       })
       .catch(() => toast('Réseau trop faible : suppression impossible.', true));
@@ -590,7 +662,9 @@
       const el = document.createElement(f.type.startsWith('video/') ? 'video' : 'img');
       el.src = url; if (el.tagName === 'VIDEO') { el.muted = true; el.loop = true; el.autoplay = true; el.playsInline = true; }
       box.appendChild(el);
-      photoUpload(e.target.closest('form'), e.target, send);
+      const box2 = e.target.closest('[data-preview]').querySelector('[data-preview-box]');
+      if (box2 && !photoOriginal.has(box2)) photoOriginal.set(box2, box2.innerHTML);
+      photoBar(e.target, e.target.name, true); // rien ne part : on attend « ✓ »
       const rm = e.target.closest('form').querySelector('[data-remove-cover]');
       if (rm && e.target.name === 'cover') rm.checked = false;
     }

@@ -3035,3 +3035,21 @@ a.mention:hover { text-decoration: underline; }
 .edit-avatar-del { position: absolute; left: 0; bottom: 4px; width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--surface); background: var(--coral-600); color: #fff; display: grid; place-items: center; cursor: pointer; }
 .edit-avatar-del .ico { width: 14px; height: 14px; }
 .edit-avatar-del:has(input:checked) { background: var(--text-3); }
+
+/* Photo choisie : « ✓ enregistrer » et « ✕ annuler », là où se trouve la suppression */
+.photo-act { position: absolute; left: 0; bottom: 4px; display: inline-flex; gap: 4px; }
+.photo-act[hidden] { display: none; }
+.photo-act-ok, .photo-act-no { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--surface); display: grid; place-items: center; cursor: pointer; color: #fff; }
+.photo-act-ok { background: var(--success); }
+.photo-act-no { background: var(--text-3); }
+.photo-act .ico { width: 14px; height: 14px; }
+.edit-cover-btns .photo-act { position: static; }
+.edit-cover-btns .vbtn.ok { background: var(--success); }
+.edit-cover-btns .photo-act .vbtn { border-width: 0; }
+
+/* Fenêtre de confirmation : même allure que les feuilles de l'app */
+dialog.confirm-sheet { max-width: 380px; padding: 0 0 6px; }
+dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
+.confirm-text { margin: 0; padding: 4px 18px 16px; color: var(--text-2); font-size: .92rem; line-height: 1.45; }
+.confirm-actions { display: flex; gap: 8px; padding: 0 18px 12px; }
+.confirm-actions .btn { flex: 1; justify-content: center; }

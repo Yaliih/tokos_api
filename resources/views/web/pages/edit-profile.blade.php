@@ -86,7 +86,7 @@
     </form>
 @else
     {{-- ── Page principale : photo, identité, puis les tuiles ── --}}
-    <form class="edit-form card" id="identity-form" method="post" action="{{ $action }}" enctype="multipart/form-data" data-photo-url="{{ $isUser ? '/parametres/profil/photo' : '/espaces/'.$values['slug'].'/photo' }}">
+    <form class="edit-form card" id="identity-form" method="post" action="{{ $action }}" enctype="multipart/form-data" data-photo-url="{{ $isUser ? '/parametres/profil/photo' : '/espaces/'.$values['slug'].'/photo' }}" data-has-avatar="{{ empty($hasAvatar) ? 0 : 1 }}" data-has-cover="{{ $cover ? 1 : 0 }}">
         @csrf
         <div class="edit-cover" data-preview>
             <div class="edit-cover-media" data-preview-box>
@@ -100,6 +100,10 @@
             <div class="edit-cover-btns">
                 <button type="button" class="vbtn wide" data-preview-pick>@icon('camera', 'ico-sm')<span>Couverture</span></button>
                 <button type="button" class="vbtn" title="Retirer la couverture" data-photo-remove="cover" aria-label="Retirer la couverture" @if (! $cover) hidden @endif>@icon('x', 'ico-sm')</button>
+                <span class="photo-act" data-photo-act="cover" hidden>
+                    <button type="button" class="vbtn ok" data-photo-save="cover" aria-label="Enregistrer cette couverture">@icon('check', 'ico-sm')</button>
+                    <button type="button" class="vbtn" data-photo-cancel="cover" aria-label="Annuler">@icon('x', 'ico-sm')</button>
+                </span>
             </div>
         </div>
 
@@ -109,6 +113,11 @@
             <button type="button" class="edit-avatar-btn" data-preview-pick aria-label="Changer la photo de profil">@icon('camera', 'ico-sm')</button>
             {{-- Retirer la photo : confirmation, puis suppression immédiate --}}
             <button type="button" class="edit-avatar-del" title="Retirer la photo" data-photo-remove="avatar" aria-label="Retirer la photo" @if (empty($hasAvatar)) hidden @endif>@icon('x', 'ico-sm')</button>
+            {{-- Photo choisie mais pas encore enregistrée : on confirme ici --}}
+            <span class="photo-act" data-photo-act="avatar" hidden>
+                <button type="button" class="photo-act-ok" data-photo-save="avatar" aria-label="Enregistrer cette photo">@icon('check', 'ico-sm')</button>
+                <button type="button" class="photo-act-no" data-photo-cancel="avatar" aria-label="Annuler">@icon('x', 'ico-sm')</button>
+            </span>
         </div>
 
         <div class="edit-fields">
