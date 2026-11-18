@@ -29,7 +29,7 @@
              Tes propres clips dans public/videos/talents/*.mp4 remplacent ceux de Mixkit (licence gratuite). --}}
         @php
             $local = collect(glob(public_path('videos/talents/*.mp4')) ?: [])->sort()->map(fn ($f) => asset('videos/talents/'.basename($f)))->values();
-            $clips = $local->isNotEmpty() ? $local->all() : collect([45547, 40623, 48365, 45452])
+            $clips = $local->isNotEmpty() ? $local->all() : collect([45547, 40623, 48365])
                 ->map(fn ($id) => "https://assets.mixkit.co/videos/$id/$id-360.mp4")->all();
         @endphp
         <div class="auth-reel" aria-hidden="true" data-auth-reel='@json($clips)'>
@@ -62,42 +62,75 @@
         if (c && (c.saveData || /(^|-)2g$/.test(c.effectiveType || ''))) return;
         var clips = JSON.parse(reel.dataset.authReel || '[]'), v = reel.querySelectorAll('video');
         if (!clips.length) return;
-        if (clips.length === 1) { v[0].loop = true; v[0].src = clips[0]; v[0].addEventListener('playing', function () { v[0].classList.add('on'); }); v[0].play().catch(function () {}); return; }
-        var SHOT = 4200, i = 0, cur = 0, timer;
+
+        // Chaque clip va jusqu'au bout, puis fondu au noir et on enchaîne : jamais de coupe au milieu.
+        var FADE = 760, i = 0, cur = 0, busy = false;
+
+        function play(el) { var p = el.play(); if (p && p.catch) p.catch(function () {}); }
         function load(el, k) { el.src = clips[k % clips.length]; el.preload = 'auto'; el.load(); }
+
         function show(el) {
-            var p = el.play(); if (p && p.catch) p.catch(function () {});
-            var old = v[1 - cur]; old.classList.remove('on');
-            setTimeout(function () { old.pause(); }, 800);
+            v.forEach(function (other) {
+                if (other === el) return;
+                other.classList.remove('on');
+                setTimeout(function () { other.pause(); }, FADE + 80);
+            });
+            el.classList.add('on');
+            play(el);
         }
-        function next() {
-            i++;
+
+        function prepareNext() {
+            // Le clip suivant se charge pendant que celui-ci joue
+            if (v.length > 1) setTimeout(function () { load(v[1 - cur], i + 1); }, 1200);
+        }
+
+        function advance() {
+            if (busy) return;
+            busy = true;
+            setTimeout(function () { busy = false; }, FADE + 150);
+
+            // Un seul clip : on le remet au début, en fondu
+            if (v.length < 2) {
+                var one = v[0];
+                one.classList.remove('on');
+                setTimeout(function () { one.currentTime = 0; show(one); }, FADE);
+                return;
+            }
+
+            i = (i + 1) % clips.length;
             var nx = 1 - cur, el = v[nx];
-            var go = function () { el.removeEventListener('canplay', go); el.currentTime = 0; cur = nx; show(el); schedule(); };
-            if (el.readyState >= 3) go(); else { el.addEventListener('canplay', go); if (!el.getAttribute('src')) load(el, i); }
+            var go = function () {
+                el.removeEventListener('canplay', go);
+                el.currentTime = 0;
+                cur = nx;
+                show(el);
+                prepareNext();
+            };
+            if (el.readyState >= 3) go(); else { el.addEventListener('canplay', go); load(el, i); }
         }
-        function schedule() {
-            clearTimeout(timer);
-            timer = setTimeout(next, SHOT);
-            // Le clip suivant se prépare pendant que celui-ci joue
-            setTimeout(function () { load(v[1 - cur], i + 1); }, 1200);
-        }
+
         var fails = 0;
         v.forEach(function (el) {
-            // Un clip injoignable : on passe au suivant (sans boucler à l'infini)
+            el.addEventListener('ended', advance);
             el.addEventListener('error', function () {
-                if (++fails > clips.length) return;
-                if (el === v[cur]) { next(); } else { i++; load(el, i + 1); }
+                if (++fails > clips.length) return; // aucun clip joignable : on laisse tomber
+                advance();
             });
         });
+
         function start() {
             var el = v[0];
-            el.addEventListener('playing', function once() { el.removeEventListener('playing', once); el.classList.add('on'); schedule(); });
-            load(el, 0); var p = el.play(); if (p && p.catch) p.catch(function () {});
+            el.addEventListener('playing', function once() {
+                el.removeEventListener('playing', once);
+                el.classList.add('on');
+                prepareNext();
+            });
+            load(el, 0);
+            play(el);
         }
         if (document.readyState === 'complete') setTimeout(start, 300); else addEventListener('load', function () { setTimeout(start, 300); });
     })();
-</script>
+    </script>
 <script src="{{ asset('js/tokos.js') }}?v={{ filemtime(public_path('js/tokos.js')) }}" defer></script>
 </body>
 </html>
