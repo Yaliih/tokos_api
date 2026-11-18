@@ -104,7 +104,8 @@
                         @elseif ($visual)
                             <img src="{{ $visual['url'] }}" alt="Proposition de {{ $e['display_name'] }}" loading="lazy" data-zoom>
                         @elseif ($isText)
-                            <div class="quote">{!! $choice ? e(\Illuminate\Support\Str::limit($e['display_name'], $compact ? 180 : 420)) : \App\Support\Mentions::html(\Illuminate\Support\Str::limit($e['content'], $compact ? 180 : 420), $e['mentions'] ?? []) !!}</div>
+                            {{-- Duel en texte : le texte se replie (même mécanique que les publications), « Voir plus » déplie par paliers --}}
+                            <div class="quote"><div class="rm" data-rm="4"><p class="rm-txt">{!! $choice ? e($e['display_name']) : \App\Support\Mentions::html($e['content'], $e['mentions'] ?? []) !!}</p><button type="button" class="rm-btn" data-rm-btn hidden>Voir plus</button></div></div>
                         @else
                             <span class="face">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="">@else<span class="initial">{{ $initial }}</span>@endif</span>
                         @endif

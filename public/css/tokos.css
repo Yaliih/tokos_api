@@ -3053,3 +3053,8 @@ dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
 .confirm-text { margin: 0; padding: 4px 18px 16px; color: var(--text-2); font-size: .92rem; line-height: 1.45; }
 .confirm-actions { display: flex; gap: 8px; padding: 0 18px 12px; }
 .confirm-actions .btn { flex: 1; justify-content: center; }
+
+/* Duel en texte : le texte se replie sur 4 lignes avec « Voir plus » */
+.side-visual .quote .rm { width: 100%; }
+.side-visual .quote .rm-txt { margin: 0; }
+.side-visual .quote .rm-btn { margin-top: 8px; font-size: .82rem; font-weight: 800; }
