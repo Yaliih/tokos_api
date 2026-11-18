@@ -242,12 +242,21 @@ class User extends Authenticatable implements \Filament\Models\Contracts\Filamen
         // On utilise getRawOriginal($attribute) pour éviter le conflit de nom
         $brute = $this->getRawOriginal($attribute);
        
+        // Photos par défaut : des fichiers du site (public/img/…), donc versionnés et présents
+        // sur toutes les installations. Celles du stockage étaient ignorées par git.
+        if ($brute === null || $brute === '') {
+            if ($attribute === 'cover') {
+                return asset('img/covers/defaut.png');
+            }
+            if ($attribute === 'avatar') {
+                return asset($this->gender === 'male' ? 'img/avatars/homme.png' : 'img/avatars/femme.png');
+            }
+        }
+
         switch ($attribute) {
             case 'cover':
-                $link = $brute != null ? $brute : 'covers/images/null.png';
-                break;
             case 'avatar':
-                $link = $brute != null ? $brute : ($this->gender == 'male' ? 'avatars/null.png' : 'avatars/nulle.png');
+                $link = (string) $brute;
                 break;
             default:
                 $link = 'images/' . $this->photo;
