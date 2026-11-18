@@ -3058,3 +3058,15 @@ dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
 .side-visual .quote .rm { width: 100%; }
 .side-visual .quote .rm-txt { margin: 0; }
 .side-visual .quote .rm-btn { margin-top: 8px; font-size: .82rem; font-weight: 800; }
+
+/* ── Duel en texte : le nom garde sa photo ronde à gauche, et « Voir plus » reste au-dessus ── */
+.side.is-text .side-visual .tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 10px 2px 2px; background: none; color: var(--text-2); }
+.side.is-text .side-visual .tag img { display: block; width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex: none; }
+.side.is-text .side-visual .tag:not(:has(img)) { padding-left: 10px; }
+.side.is-text .side-visual .quote { padding-top: 48px; padding-bottom: 52px; }
+.side.is-text .side-visual .quote .rm-btn { margin-top: 8px; }
+.versus.is-stack .side.b.is-text .quote { padding-top: 52px; padding-bottom: 52px; }
+@media (max-width: 560px) {
+  .side.is-text .side-visual .quote { padding-top: 44px; padding-bottom: 48px; }
+  .side.is-text .side-visual .tag img { width: 20px; height: 20px; }
+}
