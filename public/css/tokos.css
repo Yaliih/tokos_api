@@ -2919,9 +2919,6 @@ a.mention:hover { text-decoration: underline; }
 .versus .side-visual > img,
 .versus .side-visual > video { background: #000; }
 
-/* Cercle d'un duel : l'image du défi remplit tout le cercle (elle remplace les deux photos) */
-.story-ring .inner > .shot { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; background: var(--surface-3); }
-
 /* ── Ondes audio : jamais de débordement ───────────────────────────────
    Les barres gardaient une largeur mini (2 px) et 2 px d'écart : 48 barres
    faisaient ~190 px, plus que la zone disponible dans un duel, dans l'aperçu
