@@ -23,3 +23,9 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+# Le manifest (couleurs de l'app) et le service worker doivent être relus, pas gardés en cache
+<IfModule mod_headers.c>
+    <FilesMatch "^(manifest\.webmanifest|sw\.js)$">
+        Header set Cache-Control "no-cache, max-age=0, must-revalidate"
+    </FilesMatch>
+</IfModule>
