@@ -154,6 +154,46 @@ Artisan::command('admin:creer {--telephone=} {--mot-de-passe=} {--code=} {--pren
 
     return 0;
 })->purpose('Créer (ou promouvoir) un compte admin avec un numéro et un mot de passe');
+// Auto-héberger la police du site (plus de requête à Google) : php artisan fonts:local
+Artisan::command('fonts:local', function () {
+    $url = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap';
+    $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0 Safari/537.36';
+    $res = \Illuminate\Support\Facades\Http::withHeaders(['User-Agent' => $ua])->timeout(30)->get($url);
+    if (! $res->successful()) {
+        $this->error('Téléchargement refusé (HTTP '.$res->status().'). Vérifie la connexion du serveur.');
+
+        return 1;
+    }
+    $css = $res->body();
+    preg_match_all('#url\((https://[^)]+)\)#', $css, $m);
+    $urls = array_values(array_unique($m[1] ?? []));
+    if (! $urls) {
+        $this->error('Aucun fichier de police dans la réponse de Google.');
+
+        return 1;
+    }
+    $dir = public_path('fonts/plus-jakarta');
+    if (! is_dir($dir)) {
+        mkdir($dir, 0755, true);
+    }
+    $ok = 0;
+    foreach ($urls as $u) {
+        $bin = \Illuminate\Support\Facades\Http::timeout(60)->get($u);
+        if (! $bin->successful()) {
+            $this->warn('Échec : '.$u);
+            continue;
+        }
+        $name = basename((string) parse_url($u, PHP_URL_PATH));
+        file_put_contents($dir.'/'.$name, $bin->body());
+        $css = str_replace($u, '/fonts/plus-jakarta/'.$name, $css);
+        $ok++;
+    }
+    file_put_contents(public_path('css/plus-jakarta.css'), $css);
+    $this->info($ok.' fichier(s) de police enregistré(s) dans public/fonts/plus-jakarta.');
+    $this->info('La page charge maintenant la police depuis le site (public/css/plus-jakarta.css) : plus aucune requête à Google.');
+
+    return 0;
+})->purpose('Télécharger la police du site pour la servir localement (plus rapide, zéro requête externe)');
 // eMess : voir quels modèles existent sur le compte, et tester un envoi sans passer par le site
 Artisan::command('emess:modeles', function () {
     $c = config('messaging.emess');

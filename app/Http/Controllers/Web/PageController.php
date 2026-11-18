@@ -66,7 +66,7 @@ class PageController extends Controller
                 ->orderByDesc('hot_score')->orderByDesc('id')->limit(20)->get()
                 ->map(fn ($c) => Presenter::competition($c, $me));
         } else {
-            $res = $this->activities->feedFor($me, $request->query('avant'), 30);
+            $res = $this->activities->feedFor($me, $request->query('avant'), 8); // 8 d'abord : la page arrive vite sur réseau lent, la suite vient en défilant
             $data['blocks'] = self::feedBlocks(Presenter::activities($res['items'], $me));
             $data['next'] = $res['next_cursor'];
         }
@@ -105,7 +105,7 @@ class PageController extends Controller
     public function feedFragment(Request $request)
     {
         $me = $request->user();
-        $res = $this->activities->feedFor($me, $request->query('avant'), 20);
+        $res = $this->activities->feedFor($me, $request->query('avant'), 8);
         $html = '';
         // Chaque page suivante commence par une nouvelle bande de suggestions (personnes, puis Espaces)
         $page = max(1, $request->integer('page', 1));

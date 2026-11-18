@@ -449,29 +449,38 @@
       if (f) body.set(i.name || 'file', f, f.name || 'fichier');
     });
 
-    const xhr = new XMLHttpRequest();
-    let last = 0;
     const done = (ok, msg) => {
       form.dataset.sending = '';
       if (btn) btn.disabled = false;
       if (!ok && msg) toast(msg, true);
     };
-    xhr.open('POST', form.action || location.href, true);
-    xhr.withCredentials = true;
-    xhr.timeout = 0; // un gros fichier sur réseau lent peut prendre longtemps
-    xhr.upload.onprogress = (ev) => {
-      if (!ev.lengthComputable) return;
-      const pct = Math.round(ev.loaded / ev.total * 100);
-      if (pct >= 100 || pct - last >= 15) { last = pct; toast(pct >= 100 ? 'Envoi terminé, traitement…' : 'Envoi ' + pct + ' %'); }
+    // Réseau qui coupe : on recommence l'envoi deux fois avant d'abandonner
+    let attempt = 0;
+    const send = () => {
+      const xhr = new XMLHttpRequest();
+      let last = 0;
+      xhr.open('POST', form.action || location.href, true);
+      xhr.withCredentials = true;
+      xhr.timeout = 0; // un gros fichier sur réseau lent peut prendre longtemps
+      xhr.upload.onprogress = (ev) => {
+        if (!ev.lengthComputable) return;
+        const pct = Math.round(ev.loaded / ev.total * 100);
+        if (pct >= 100 || pct - last >= 15) { last = pct; toast(pct >= 100 ? 'Envoi terminé, traitement…' : 'Envoi ' + pct + ' %'); }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 400 && xhr.status !== 422) { done(false, 'Envoi refusé (' + xhr.status + '). Réessaie.'); return; }
+        // Après l'envoi, on ouvre la page de destination (elle montre le résultat ou les erreurs)
+        location.assign(xhr.responseURL || form.action || location.href);
+      };
+      const retry = () => {
+        if (attempt++ < 2) { toast('Réseau instable : nouvelle tentative (' + (attempt + 1) + '/3)…'); setTimeout(send, 1500 * attempt); return; }
+        done(false, 'Réseau trop faible : l\'envoi a échoué après 3 essais.');
+      };
+      xhr.onerror = retry;
+      xhr.ontimeout = retry;
+      xhr.send(body);
     };
-    xhr.onload = () => {
-      if (xhr.status >= 400 && xhr.status !== 422) { done(false, 'Envoi refusé (' + xhr.status + '). Réessaie.'); return; }
-      // Après l'envoi, on ouvre la page de destination (elle montre le résultat ou les erreurs)
-      location.assign(xhr.responseURL || form.action || location.href);
-    };
-    xhr.onerror = () => done(false, 'Réseau trop faible : l\'envoi a échoué. Réessaie quand le réseau revient.');
-    xhr.ontimeout = () => done(false, 'L\'envoi a pris trop de temps. Réessaie.');
-    xhr.send(body);
+    send();
   });
   // ── Modifier le profil : aperçu des images choisies ───────────
   document.addEventListener('click', (e) => {

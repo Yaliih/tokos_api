@@ -8,9 +8,15 @@
     {{-- La barre du navigateur suit le thème du téléphone --}}
     <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
     <meta name="theme-color" content="#16161C" media="(prefers-color-scheme: dark)">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    {{-- Police : auto-hébergée si `php artisan fonts:local` a été lancé (aucune requête externe),
+         sinon Google Fonts en NON bloquant : la page s'affiche sans l'attendre. --}}
+    @if (is_file(public_path('css/plus-jakarta.css')))
+        <link rel="stylesheet" href="{{ url('/a/plus-jakarta.'.filemtime(public_path('css/plus-jakarta.css')).'.css') }}">
+    @else
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" media="print" onload="this.media='all'">
+        <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap"></noscript>
+    @endif
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
