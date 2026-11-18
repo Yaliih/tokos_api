@@ -2592,13 +2592,166 @@ document.addEventListener('tokos:locating', (e) => {
     if (!b) return;
     const box = b.closest('[data-readmore]');
     const open = box.classList.toggle('open');
-    b.textContent = open ? 'Voir moins' : 'Lire plus';
+    b.textContent = open ? 'Voir moins' : 'Voir plus';
   });
   new MutationObserver(() => fit()).observe(document.body, { childList: true, subtree: true });
   if (document.readyState !== 'loading') fit(); else document.addEventListener('DOMContentLoaded', () => fit());
   addEventListener('load', () => fit());
 })();
 
+/* Texte long replié : le texte est coupé à la fin d'une ligne, « … » collé au texte, puis « Voir plus » ouvre la suite par paliers */
+(function () {
+  const all = () => document.querySelectorAll('[data-rm]');
+  const txt = (box) => box.querySelector('.rm-txt');
+  const btn = (box) => box.querySelector('[data-rm-btn]');
+
+  /* Position (nœud, décalage) après `idx` caractères du texte */
+  function locate(root, idx) {
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null);
+    let acc = 0, n;
+    while ((n = w.nextNode())) {
+      const len = n.nodeValue.length;
+      if (acc + len >= idx) return { node: n, offset: idx - acc };
+      acc += len;
+    }
+    return null;
+  }
+
+  /* Les lignes réellement affichées : un haut distinct par ligne (tolérance d'une demi-ligne,
+     pour ne pas compter deux fois une ligne qui mêle texte, lien de mention ou exposant) */
+  function lineTops(root) {
+    const r = document.createRange();
+    r.selectNodeContents(root);
+    const rects = Array.prototype.slice.call(r.getClientRects());
+    if (!rects.length) return [];
+    let lh = parseFloat(getComputedStyle(root).lineHeight);
+    if (!isFinite(lh) || lh <= 0) lh = rects.reduce((m, x) => Math.max(m, x.height), 0) || 16;
+    const tops = [];
+    rects.forEach((rect) => {
+      if (!tops.some((t) => Math.abs(t - rect.top) < lh / 2)) tops.push(rect.top);
+    });
+    return tops.sort((a, b) => a - b);
+  }
+
+  /* Nombre de caractères dont l'affichage tient dans `lines` lignes */
+  function charsFor(root, lines) {
+    const total = root.textContent.length;
+    const tops = lineTops(root);
+    if (tops.length <= lines) return total;
+    const limit = tops[lines];
+    let lo = 1, hi = total, best = 0;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const loc = locate(root, mid);
+      if (!loc) { hi = mid - 1; continue; }
+      const rr = document.createRange();
+      rr.setStart(root, 0);
+      rr.setEnd(loc.node, loc.offset);
+      if (rr.getBoundingClientRect().bottom <= limit + 0.5) { best = mid; lo = mid + 1; } else { hi = mid - 1; }
+    }
+    return best;
+  }
+
+  /* Garde les `chars` premiers caractères, supprime tout le reste */
+  function cutAt(root, chars) {
+    const loc = locate(root, chars);
+    if (!loc) return;
+    if (loc.node.nodeValue.length > loc.offset) loc.node.nodeValue = loc.node.nodeValue.slice(0, loc.offset);
+    let cur = loc.node;
+    while (cur && cur !== root) {
+      let sib = cur.nextSibling;
+      while (sib) { const nx = sib.nextSibling; sib.remove(); sib = nx; }
+      cur = cur.parentNode;
+    }
+  }
+
+  /* Enlève les espaces et retours à la ligne de la fin : ils ne doivent pas compter comme du texte caché */
+  function trimTrailing(root) {
+    while (root.lastChild && root.lastChild.nodeType === 3 && !root.lastChild.nodeValue.trim()) root.removeChild(root.lastChild);
+    if (root.lastChild && root.lastChild.nodeType === 3) root.lastChild.nodeValue = root.lastChild.nodeValue.replace(/\s+$/, '');
+  }
+
+  function render(box, animate) {
+    const st = box._rm, p = txt(box), b = btn(box);
+    if (!st || !p || !b) return;
+    const h0 = p.getBoundingClientRect().height;
+    p.style.height = ''; p.style.overflow = ''; p.style.transition = ''; p.style.maxHeight = '';
+    p.innerHTML = st.html;
+    trimTrailing(p);
+    const shown = Math.min(st.shown, st.total);
+    let coupe = false;
+    if (shown < st.total) {
+      const n = charsFor(p, shown);
+      if (n > 0 && n < st.len) {
+        cutAt(p, n);
+        trimTrailing(p);
+        p.appendChild(document.createTextNode('…'));
+        coupe = true;
+      }
+    }
+    const done = !coupe; // plus rien à cacher : tout le texte est affiché
+    box.classList.add('rm-ready');
+    box.classList.toggle('rm-open', done);
+    b.hidden = done && st.shown <= st.step;
+    b.textContent = done && st.shown > st.step ? 'Voir moins' : 'Voir plus';
+    if (animate) {
+      const h1 = p.getBoundingClientRect().height;
+      p.style.height = h0 + 'px';
+      p.style.overflow = 'hidden';
+      void p.offsetHeight;
+      p.style.transition = 'height .45s cubic-bezier(.25,.7,.3,1)';
+      p.style.height = h1 + 'px';
+      p.addEventListener('transitionend', function end() {
+        p.removeEventListener('transitionend', end);
+        p.style.height = ''; p.style.overflow = ''; p.style.transition = '';
+      });
+    }
+  }
+
+  function measure(box) {
+    const p = txt(box), b = btn(box);
+    if (!p || !b || !p.offsetParent) return;
+    const step = Math.max(1, parseInt(box.getAttribute('data-rm'), 10) || 4);
+    const st = box._rm || (box._rm = { shown: 0 });
+    st.step = step;
+    if (!st.html) st.html = p.innerHTML;
+    p.style.height = ''; p.style.overflow = ''; p.style.transition = '';
+    p.innerHTML = st.html;
+    trimTrailing(p);
+    st.len = p.textContent.length;
+    st.total = Math.max(1, lineTops(p).length);
+    if (!st.shown || st.shown < step) st.shown = step;
+    if (st.shown > st.total) st.shown = st.total;
+    render(box, false);
+  }
+
+  function bind(box) {
+    const b = btn(box);
+    if (!b || box._rmBound) return;
+    box._rmBound = true;
+    b.addEventListener('click', () => {
+      const st = box._rm;
+      if (!st) return;
+      const up = box.getBoundingClientRect().top < 0;
+      st.shown = st.shown >= st.total ? st.step : Math.min(st.total, st.shown + st.step);
+      render(box, true);
+      if (up) box.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+  }
+
+  const fit = () => all().forEach((box) => {
+    const p = txt(box);
+    if (!p || !p.offsetParent) return;
+    bind(box);
+    if (!box._rm) measure(box);
+  });
+  new MutationObserver(() => fit()).observe(document.body, { childList: true, subtree: true });
+  if (document.readyState !== 'loading') fit(); else document.addEventListener('DOMContentLoaded', fit);
+  addEventListener('load', () => fit());
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => all().forEach((box) => { if (box._rm) measure(box); }));
+  let rt;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => all().forEach((box) => { if (box._rm) measure(box); }), 200); });
+})();
 /* Discipline : la fenêtre s'ouvre, on tape pour chercher (sans tenir compte des accents), on touche pour choisir */
 (function () {
   const plain = (t) => String(t).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();

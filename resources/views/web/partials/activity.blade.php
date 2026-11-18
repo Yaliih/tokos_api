@@ -59,7 +59,7 @@
     @endif
     @if ($compact && ! empty($comp['blurb']))
         {{-- La description, sous le titre : trois lignes, puis « Lire plus » --}}
-        <div class="post-desc" data-readmore><p>{!! \App\Support\Mentions::html($comp['blurb'], $comp['mentions'] ?? []) !!}</p><button type="button" class="more-btn" data-readmore-btn hidden>Lire plus</button></div>
+        <div class="post-desc" data-readmore><p>{!! \App\Support\Mentions::html($comp['blurb'], $comp['mentions'] ?? []) !!}</p><button type="button" class="more-btn" data-readmore-btn hidden>Voir plus</button></div>
     @endif
 
     @if ($pm)
@@ -107,7 +107,10 @@
                 @break
             @case('post')
                 <div class="post-body">
-                    @if (filled($a['preview']['post']['content']))<p style="white-space:pre-line">{!! \App\Support\Mentions::html($a['preview']['post']['content']) !!}</p>@endif
+                    @if (filled($a['preview']['post']['content']))
+                        {{-- Publication longue : le texte est replié, « Lire plus » ouvre la suite (même mécanique que la description d'un concours) --}}
+                        <div class="post-text rm" data-rm="4"><p class="rm-txt">{!! \App\Support\Mentions::html($a['preview']['post']['content']) !!}</p><button type="button" class="rm-btn" data-rm-btn hidden>Voir plus</button></div>
+                    @endif
                     @if (!empty($a['preview']['post']['media']))
                         <div class="post-media">@include('web.partials.media', ['media' => $a['preview']['post']['media'], 'limit' => true])</div>
                     @endif

@@ -12,6 +12,7 @@
         </div>
     @endif
     @if (!empty($e['content']) && ! ($hideText ?? false))
-        <p class="showcase-text">{!! \App\Support\Mentions::html(\Illuminate\Support\Str::limit($e['content'], $sm ? 220 : 600), $e['mentions'] ?? []) !!}</p>
+        {{-- Le texte de la performance se replie : « Lire plus » ouvre la suite (le texte entier reste dans la page) --}}
+        <div class="showcase-more rm" data-rm="4"><p class="showcase-text rm-txt">{!! \App\Support\Mentions::html($e['content'], $e['mentions'] ?? []) !!}</p><button type="button" class="rm-btn" data-rm-btn hidden>Voir plus</button></div>
     @endif
 </div>

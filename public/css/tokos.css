@@ -2547,6 +2547,9 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 .post-desc .more-btn:hover { text-decoration: underline; }
 .post-desc .more-btn[hidden] { display: none; }
 
+/* Fil : le texte d'une publication longue. Le repli et les paliers sont gérés par public/js/tokos.js */
+.post-text p { margin: 0; color: var(--text); font-size: 1rem; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+
 
 /* Fil : le titre sous le nom tient sur deux lignes avant d'être coupé */
 .post-head .who-line a.ctx { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; }
@@ -2868,3 +2871,15 @@ a.mention:hover { text-decoration: underline; }
 .who strong { display: inline-block; max-width: 100%; vertical-align: bottom; }
 .who strong:has(+ .verified) { max-width: calc(100% - 20px); }
 .who .sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Texte long replié : le texte est coupé en fin de ligne avec un « … » collé au texte, puis « Voir plus » ouvre la suite par paliers (voir public/js/tokos.js) */
+.rm-txt { position: relative; }
+.rm:not(.rm-ready) .rm-txt { overflow: hidden; max-height: 6.2em; }
+.rm:not(.rm-ready)[data-rm="12"] .rm-txt { max-height: 18.6em; }
+.rm-btn { display: block; margin: 6px 0 0; padding: 0; border: 0; background: none; font: inherit; font-size: .86rem; font-weight: 700; color: var(--text-2); cursor: pointer; }
+.rm-btn:hover { color: var(--text); text-decoration: underline; }
+.rm-btn[hidden] { display: none; }
+/* Vitrine d'une performance (défi, duel) : le padding va sur le conteneur, pas sur le paragraphe replié */
+.showcase-more { padding: 14px 16px; }
+.showcase.is-text .showcase-more { padding: 18px; }
+.showcase-more > p.showcase-text { margin: 0; padding: 0; }

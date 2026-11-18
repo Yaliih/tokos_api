@@ -87,6 +87,73 @@ Artisan::command('admin:promote {phone} {--retirer}', function (string $phone) {
     $user->forceFill(['is_admin' => ! $this->option('retirer')])->save();
     $this->info($user->first_name.' '.$user->last_name.($this->option('retirer') ? ' n\'est plus admin.' : ' est maintenant admin : /admin'));
 })->purpose('Donner ou retirer l\'accès à l\'administration');
+// Créer un compte admin en tapant le numéro et le mot de passe : php artisan admin:creer
+// Sans option, la commande pose les questions ; avec options, elle peut tourner sans intervention :
+//   php artisan admin:creer --telephone=810000000 --mot-de-passe=MonMotDePasse
+Artisan::command('admin:creer {--telephone=} {--mot-de-passe=} {--code=} {--prenom=} {--nom=} {--naissance=}', function () {
+    $interactif = $this->input->isInteractive();
+
+    // Indicatif du pays : +243 par défaut
+    $code = '+'.ltrim((string) ($this->option('code') ?: '+243'), '+');
+
+    // Le numéro, sans le 0 et sans espaces
+    $saisi = (string) $this->option('telephone');
+    if ($saisi === '' && $interactif) {
+        $saisi = (string) $this->ask('Numéro de téléphone (sans le 0, exemple 810000000)');
+    }
+    $number = ltrim((string) preg_replace('/\D/', '', $saisi), '0');
+    if ($number === '' || strlen($number) < 6 || strlen($number) > 20) {
+        $this->error('Numéro invalide. Exemple : php artisan admin:creer --telephone=810000000');
+
+        return 1;
+    }
+
+    // Le mot de passe, saisi sans l'afficher à l'écran
+    $mdp = (string) $this->option('mot-de-passe');
+    if ($mdp === '' && $interactif) {
+        $mdp = (string) $this->secret('Mot de passe (6 caractères minimum)');
+        if ($mdp !== '' && (string) $this->secret('Confirmer le mot de passe') !== $mdp) {
+            $this->error('Les deux mots de passe ne sont pas identiques.');
+
+            return 1;
+        }
+    }
+    if (strlen($mdp) < 6) {
+        $this->error('Mot de passe trop court : 6 caractères minimum.');
+
+        return 1;
+    }
+
+    // Nom affiché et date de naissance (obligatoire en base, sans importance pour un admin)
+    $prenom = (string) ($this->option('prenom') ?: 'Admin');
+    $nom = (string) ($this->option('nom') ?: 'Sosa');
+    $naissance = (string) ($this->option('naissance') ?: '1990-01-01');
+
+    $user = \App\Models\User::where('phone_number', $number)->first();
+    $existe = (bool) $user;
+
+    if (! $user) {
+        $user = new \App\Models\User();
+        $user->first_name = $prenom;
+        $user->last_name = $nom;
+        $user->phone_code = $code;
+        $user->phone_number = $number;
+        $user->birth_date = $naissance;
+    }
+    $user->password = \Illuminate\Support\Facades\Hash::make($mdp);
+    $user->is_admin = true;
+    $user->is_active = true;
+    $user->phone_verified_at = $user->phone_verified_at ?: now();
+    $user->save();
+
+    $this->info($existe ? 'Compte existant : accès admin et mot de passe mis à jour.' : 'Compte admin créé.');
+    $this->line('  Numéro       : '.$user->phone_code.' '.$user->phone_number);
+    $this->line('  Mot de passe : celui que vous venez de saisir');
+    $this->line('  Connexion    : '.config('app.url').'/connexion');
+    $this->line('  Admin        : '.config('app.url').'/admin');
+
+    return 0;
+})->purpose('Créer (ou promouvoir) un compte admin avec un numéro et un mot de passe');
 
 // Supprimer les pièces des demandes de certification traitées (tous les jours)
 Artisan::command('certification:purge', function () {
