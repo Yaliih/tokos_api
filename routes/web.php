@@ -14,6 +14,22 @@ use App\Http\Controllers\Web\AuthController;
 use App\Http\Controllers\Web\PageController;
 use Illuminate\Support\Facades\Route;
 
+// Fichiers du site servis avec leur version dans l'adresse : /a/tokos.1794959040.css
+// Une nouvelle version = une nouvelle adresse, donc un cache (navigateur ou CDN) ne peut plus
+// servir un vieux CSS après un déploiement.
+Route::get('/a/{file}', function (string $file) {
+    if (! preg_match('/^([a-z0-9\-]+)\.(\d+)\.(css|js)$/', $file, $m)) {
+        abort(404);
+    }
+    $ext = $m[3];
+    $path = public_path(($ext === 'css' ? 'css' : 'js').'/'.$m[1].'.'.$ext);
+    abort_unless(is_file($path), 404);
+
+    return response()->file($path, [
+        'Content-Type' => $ext === 'css' ? 'text/css; charset=utf-8' : 'application/javascript; charset=utf-8',
+        'Cache-Control' => 'public, max-age=86400',
+    ]);
+})->where('file', '[A-Za-z0-9.\-]+');
 // Pages publiques
 Route::get('/', [PageController::class, 'home']);
 Route::get('/decouvrir', [PageController::class, 'discover']);

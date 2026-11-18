@@ -18,7 +18,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="Sosa">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <link rel="stylesheet" href="{{ asset('css/tokos.css') }}?v={{ filemtime(public_path('css/tokos.css')) }}">
+    <link rel="stylesheet" href="{{ url('/a/tokos.'.filemtime(public_path('css/tokos.css')).'.css') }}">
     <script>document.documentElement.classList.add('js'); try { var t = localStorage.getItem('tokos-theme'); if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
@@ -131,6 +131,6 @@
         if (document.readyState === 'complete') setTimeout(start, 300); else addEventListener('load', function () { setTimeout(start, 300); });
     })();
     </script>
-<script src="{{ asset('js/tokos.js') }}?v={{ filemtime(public_path('js/tokos.js')) }}" defer></script>
+<script src="{{ url('/a/tokos.'.filemtime(public_path('js/tokos.js')).'.js') }}" defer></script>
 </body>
 </html>
