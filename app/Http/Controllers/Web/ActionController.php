@@ -774,8 +774,9 @@ class ActionController extends Controller
     private function applyImages(Request $request, \Illuminate\Database\Eloquent\Model $model, string $folder): void
     {
         $disk = \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'));
+        $oldAvatar = $model->getRawOriginal('avatar');
         if ($file = $request->file('avatar')) {
-            $old = $model->getRawOriginal('avatar');
+            $old = $oldAvatar;
             // Photo de profil : allégée (1600 px au plus, JPEG) avant d'être rangée
             [$toStore, $ext] = app(\App\Services\MediaCompressor::class)->compress($file, 'image');
             $model->avatar = $disk->putFileAs('avatars/'.$folder, $toStore, \Illuminate\Support\Str::random(24).'.'.$ext);
@@ -784,6 +785,12 @@ class ActionController extends Controller
             }
             if ($old && ! str_starts_with($old, 'demo/') && ! str_contains($old, 'null') && $disk->exists($old)) {
                 $disk->delete($old);
+            }
+        } elseif ($request->boolean('remove_avatar')) {
+            // On retire la photo : le profil reprend l'image par défaut
+            $model->avatar = null;
+            if ($oldAvatar && ! str_starts_with($oldAvatar, 'demo/') && ! str_contains($oldAvatar, 'null') && $disk->exists($oldAvatar)) {
+                $disk->delete($oldAvatar);
             }
         }
         $oldCover = $model->getRawOriginal('cover');

@@ -186,7 +186,7 @@ class PageController extends Controller
         return view('web.pages.edit-profile', [
             'current' => 'profile', 'title' => 'Modifier le profil', 'hideRail' => true, 'kind' => 'user',
             'action' => '/parametres/profil', 'back' => '/@'.$u->username,
-            'avatar' => $u->avatar_url, 'cover' => $u->getRawOriginal('cover') ? $u->urlt('cover') : null, 'coverType' => $u->cover_type ?: 'image',
+            'avatar' => $u->avatar_url, 'hasAvatar' => (bool) $u->getRawOriginal('avatar'), 'cover' => $u->getRawOriginal('cover') ? $u->urlt('cover') : null, 'coverType' => $u->cover_type ?: 'image',
             'values' => ['first_name' => $u->first_name, 'last_name' => $u->last_name, 'username' => $u->username, 'bio' => $u->bio, 'city' => $u->city, 'school_space_id' => $u->school_space_id, 'interests' => $u->interests ?? [], 'located' => \App\Support\Geo::fresh($u)],
         ]);
     }
@@ -200,7 +200,7 @@ class PageController extends Controller
         return view('web.pages.edit-profile', [
             'current' => 'spaces', 'title' => 'Modifier l\'Espace', 'hideRail' => true, 'kind' => 'space',
             'action' => '/espaces/'.$space->slug.'/modifier', 'back' => '/espaces/'.$space->slug,
-            'avatar' => $space->avatar_url, 'cover' => $space->cover ? $space->cover_url : null, 'coverType' => $space->cover_type ?: 'image',
+            'avatar' => $space->avatar_url, 'hasAvatar' => (bool) $space->getRawOriginal('avatar'), 'cover' => $space->cover ? $space->cover_url : null, 'coverType' => $space->cover_type ?: 'image',
             'values' => ['name' => $space->name, 'bio' => $space->bio, 'category' => $space->category, 'subcategory' => $space->subcategory, 'kind' => $space->kind, 'website' => $space->website, 'site_template' => $space->site_template, 'slug' => $space->slug, 'location' => $space->location, 'join_approval' => (bool) $space->join_approval],
         ]);
     }

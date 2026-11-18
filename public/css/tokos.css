@@ -3030,3 +3030,8 @@ a.mention:hover { text-decoration: underline; }
   .ptile-ico { width: 32px; height: 32px; border-radius: 10px; }
   .pedit-page .pedit-page-body { padding: 14px 12px 0; }
 }
+
+/* Profil : retirer la photo (petit − en bas à gauche de l'avatar, la caméra est à droite) */
+.edit-avatar-del { position: absolute; left: 0; bottom: 4px; width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--surface); background: var(--coral-600); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.edit-avatar-del .ico { width: 14px; height: 14px; }
+.edit-avatar-del:has(input:checked) { background: var(--text-3); }

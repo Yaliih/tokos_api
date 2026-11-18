@@ -107,6 +107,10 @@
             <span class="edit-avatar-img" data-preview-box><img loading="lazy" decoding="async" src="{{ $avatar }}" alt=""></span>
             <input type="file" name="avatar" accept="image/*" hidden data-preview-input data-max-mb="8">
             <button type="button" class="edit-avatar-btn" data-preview-pick aria-label="Changer la photo de profil">@icon('camera', 'ico-sm')</button>
+            @if (!empty($hasAvatar))
+                {{-- Retirer la photo : le profil reprend l'image par défaut --}}
+                <label class="edit-avatar-del" title="Retirer la photo"><input type="checkbox" name="remove_avatar" value="1" hidden data-remove-avatar>@icon('x', 'ico-sm')<span class="sr-only">Retirer la photo</span></label>
+            @endif
         </div>
 
         <div class="edit-fields">
