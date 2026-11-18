@@ -18,19 +18,30 @@ return [
         'log' => 'log',
     ],
 
-    // Durée de validité d'un code (minutes). 15 minutes : c'est ce qu'annonce le modèle SMS
-    // approuvé (« Il expire dans 15 minutes ») — ne pas descendre sans changer de modèle.
-    'code_ttl' => (int) env('VERIFICATION_CODE_TTL', 15),
+    // Durée de validité d'un code (minutes). Doit correspondre à ce qu'annonce le modèle SMS
+    // approuvé (EMESS_CODE_TEXT) : sinon le texto mentirait sur sa durée de validité.
+    'code_ttl' => (int) env('VERIFICATION_CODE_TTL', 10),
+
+    // Nom entre crochets dans le SMS ({app_name}) : c'est la marque que lit la personne
+    'app_name' => env('SMS_APP_NAME', 'Sosa'),
 
     // eMess (https://emess.cd) : SMS en RDC. eMess n'accepte QUE des textes qui correspondent à un
-    // modèle approuvé sur le compte. On réutilise donc les modèles déjà approuvés de Tuendea
-    // voir App\Services\Messaging\SmsTemplates. Rien de nouveau à faire valider.
+    // modèle approuvé sur le compte. On lui envoie donc le NOM du modèle et sa variable
+    // (voir App\Services\Messaging\SmsTemplates) : ces réglages se changent dans .env.
     'emess' => [
         'url' => env('EMESS_URL', 'https://emess.cd/api/v1'),
         'app_id' => env('EMESS_APP_ID'),
         'secret_key' => env('EMESS_SECRET_KEY'),
-        'code_template' => env('EMESS_CODE_TEMPLATE', 'tuendea_code'),
-        'test_template' => env('EMESS_TEST_TEMPLATE', 'tuendea_essai'),
+
+        // Code de vérification : nom du modèle approuvé, nom de sa variable, texte exact (facultatif)
+        'code_template' => env('EMESS_CODE_TEMPLATE', 'auth-otp'),
+        'code_variable' => env('EMESS_CODE_VARIABLE', 'code'),
+        'code_text' => env('EMESS_CODE_TEXT'),
+
+        // Message d'essai : vide tant qu'aucun modèle d'essai n'est approuvé
+        'test_template' => env('EMESS_TEST_TEMPLATE'),
+        'test_variable' => env('EMESS_TEST_VARIABLE'),
+        'test_text' => env('EMESS_TEST_TEXT'),
     ],
 
     // Infobip SMS (relais) : la base vient de la page d'accueil du portail Infobip (ex. xxxxx.api.infobip.com)

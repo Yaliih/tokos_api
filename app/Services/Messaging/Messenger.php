@@ -123,11 +123,23 @@ class Messenger
     /** Code de vérification (modèle approuvé sur eMess, modèle « authentication » sur WhatsApp). */
     public function sendCode(string $to, string $code): bool
     {
-        // Le texte est celui du modèle approuvé : c'est lui qui part, et c'est aussi
-        // le repli si eMess refuse le nom du modèle (texte brut).
-        $text = SmsTemplates::render('code', ['code' => $code])
-            ?? "Sosa : ton code est {$code}. Il est valable ".(int) config('messaging.code_ttl', 15).' minutes. Ne le partage avec personne.';
+        // Texte affiché dans le journal et utilisé en repli : celui du modèle s'il est connu
+        // (EMESS_CODE_TEXT). eMess, lui, envoie le modèle approuvé par son nom.
+        $context = self::codeContext($code);
 
-        return $this->send($to, $text, 'code', ['code' => $code]);
+        $text = SmsTemplates::render('code', $context)
+            ?? "Sosa : ton code est {$code}. Il est valable {$context['validity_minutes']} minutes. Ne le partage avec personne.";
+
+        return $this->send($to, $text, 'code', $context);
+    }
+
+    /** Les valeurs que réclame le modèle de code : {app_name}, {code}, {validity_minutes}. @return array<string, mixed> */
+    public static function codeContext(string $code): array
+    {
+        return [
+            'app_name' => (string) config('messaging.app_name', 'Sosa'),
+            'code' => $code,
+            'validity_minutes' => (int) config('messaging.code_ttl', 10),
+        ];
     }
 }

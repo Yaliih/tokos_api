@@ -174,8 +174,10 @@ Artisan::command('emess:modeles', function () {
     $this->info('Connecté à eMess — application '.$c['app_id']);
     $this->line('');
     $this->line('Modèles envoyés par Sosa :');
-    $this->line('  code de vérification : '.\App\Services\Messaging\SmsTemplates::slug('code'));
-    $this->line('  message d\'essai     : '.\App\Services\Messaging\SmsTemplates::slug('test'));
+    $this->line('  code de vérification : '.\App\Services\Messaging\SmsTemplates::slug('code')
+        .' — variable : '.(implode(', ', \App\Services\Messaging\SmsTemplates::variables('code')) ?: '?')
+        .' — texte connu : '.(\App\Services\Messaging\SmsTemplates::text('code') ? 'oui' : 'non'));
+    $this->line('  message d\'essai     : '.(\App\Services\Messaging\SmsTemplates::slug('test') ?? '(aucun modèle)'));
     $this->line('');
     $this->line('Ce que l\'API répond aux adresses de liste (pour voir les modèles du compte) :');
     foreach (['templates', 'sms/templates', 'template/list'] as $path) {
@@ -189,10 +191,13 @@ Artisan::command('emess:modeles', function () {
 Artisan::command('emess:essai {numero}', function (string $numero) {
     $digits = (string) preg_replace('/\D/', '', $numero);
     $phone = str_starts_with(trim($numero), '+') ? '+'.$digits : '+243'.ltrim($digits, '0');
-    $text = \App\Services\Messaging\SmsTemplates::render('test', []) ?? 'Message d\'essai Sosa.';
-    $this->line('Envoi vers '.$phone.' avec le modèle « '.\App\Services\Messaging\SmsTemplates::slug('test').' »');
+    // Le modèle du code est le seul approuvé pour l'instant : on l'utilise pour l'essai
+    $code = '123456';
+    $context = \App\Services\Messaging\Messenger::codeContext($code);
+    $text = \App\Services\Messaging\SmsTemplates::render('code', $context) ?? 'Essai Sosa.';
+    $this->line('Envoi vers '.$phone.' avec le modèle « '.\App\Services\Messaging\SmsTemplates::slug('code').' » (variable : '.(implode(', ', \App\Services\Messaging\SmsTemplates::variables('code')) ?: 'aucune').')');
     try {
-        $ref = app(\App\Services\Messaging\Messenger::class)->channel('sms')->send($phone, $text, 'test');
+        $ref = app(\App\Services\Messaging\Messenger::class)->channel('sms')->send($phone, $text, 'code', $context);
         $this->info('Envoyé — '.$ref);
 
         return 0;

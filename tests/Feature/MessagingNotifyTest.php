@@ -28,7 +28,9 @@ class MessagingNotifyTest extends TestCase
     {
         config([
             'messaging.channels' => ['sms'], 'messaging.drivers.sms' => 'emess,infobip',
-            'messaging.emess' => ['url' => 'https://emess.test/api/v1', 'app_id' => 'app', 'secret_key' => 'sec', 'code_template' => 'tuendea_code'],
+            'messaging.emess' => ['url' => 'https://emess.test/api/v1', 'app_id' => 'app', 'secret_key' => 'sec',
+                'code_template' => 'auth-otp',
+                'code_text' => '[{app_name}] Votre code de vérification est {code}. Il expire dans {validity_minutes} min. Ne le partagez pas.'],
             'messaging.infobip' => ['base_url' => 'ib.test', 'api_key' => 'k', 'sender' => 'Sosa'],
         ]);
         app(Messenger::class)->saveChannels(['sms']);
@@ -42,7 +44,7 @@ class MessagingNotifyTest extends TestCase
             'emess.test/api/v1/sms/send' => Http::response(['id' => 'em1']),
         ]);
         $this->assertTrue(app(Messenger::class)->sendCode('+243812345678', '123456'));
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/sms/send') && $r['template'] === 'tuendea_code' && $r['params']['code'] === '123456');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/sms/send') && $r['template'] === 'auth-otp' && $r['params']['code'] === '123456' && $r['params']['app_name'] === 'Sosa' && $r['params']['validity_minutes'] === '10');
     }
 
     public function test_infobip_takes_over_when_emess_fails(): void
@@ -68,8 +70,8 @@ class MessagingNotifyTest extends TestCase
         $this->assertTrue(app(Messenger::class)->sendCode('+243812345678', '123456'));
         // Le repli en texte brut doit etre le TEXTE EXACT du modele approuve
         Http::assertSent(fn ($r) => isset($r['message'])
-            && str_starts_with($r['message'], 'Tuendea : votre code pour changer de mot de passe est 123456.')
-            && str_contains($r['message'], '15 minutes'));
+            && str_starts_with($r['message'], '[Sosa] Votre code de vérification est 123456.')
+            && str_contains($r['message'], '10 min.'));
     }
     public function test_change_password_with_sms_code(): void
     {

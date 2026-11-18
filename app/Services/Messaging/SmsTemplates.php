@@ -3,65 +3,64 @@
 namespace App\Services\Messaging;
 
 /**
- * Textes des SMS et modèles eMess.
+ * Modèles SMS approuvés sur le compte eMess.
  * ---------------------------------------------------------------------------
  * eMess (emess.cd) refuse tout message qui ne correspond pas à un modèle
- * approuvé sur le compte : « Message does not match any approved template ».
+ * approuvé : « Message does not match any approved template ».
  *
- * Les modèles ci-dessous sont CEUX DE TUENDEA, déjà approuvés : on les reprend
- * à l'identique (même slug, même texte, mêmes variables) pour ne pas avoir à
- * en faire valider de nouveaux. Le texto reçu commence donc par « Tuendea ».
+ * Rien n'est écrit en dur ici : un envoi a besoin de trois réglages, dans .env
+ * (ou dans l'admin), et se change sans toucher au code :
  *
- *    purpose => [slug eMess, texte exact du modèle, variables attendues]
+ *   EMESS_CODE_TEMPLATE  nom du modèle approuvé    (ex. verify-otp-fr)
+ *   EMESS_CODE_VARIABLE  nom de sa variable        (ex. code, otp…)
+ *   EMESS_CODE_TEXT      texte exact du modèle     (facultatif : repli en texte
+ *                        brut et affichage dans le journal)
  *
- * Pour passer un jour à des modèles « Sosa » : les faire approuver dans eMess,
- * puis changer EMESS_CODE_TEMPLATE / EMESS_TEST_TEMPLATE et le texte ici.
- * Rien d'autre à modifier dans le code.
+ * Idem pour l'essai : EMESS_TEST_TEMPLATE / _VARIABLE / _TEXT — tant qu'aucun
+ * modèle d'essai n'est approuvé, ils restent vides et l'essai utilise le modèle
+ * du code (`php artisan emess:essai`).
  */
 class SmsTemplates
 {
-    public const CATALOG = [
-        'code' => [
-            'tuendea_code',
-            'Tuendea : votre code pour changer de mot de passe est {code}. Il expire dans 15 minutes. Ne le donnez à personne.',
-            ['code' => 'chiffres, 6'],
-        ],
-        'test' => [
-            'tuendea_essai',
-            'Tuendea : ceci est un message d\'essai.',
-            [],
-        ],
+    public const PURPOSES = ['code', 'test'];
+
+    /** Textes des modèles approuvés (utilisables tels quels dans eMess). */
+    public const DEFAULT_TEXT = [
+        'code' => '[{app_name}] Votre code de vérification est {code}. Il expire dans {validity_minutes} min. Ne le partagez pas.',
     ];
 
-    /** Nom du modèle : celui réglé dans .env s'il existe, sinon celui du catalogue. */
     public static function slug(?string $purpose): ?string
     {
-        $purpose = (string) $purpose;
-        $override = config('messaging.emess.'.$purpose.'_template');
-        if (is_string($override) && $override !== '') {
-            return $override;
-        }
+        $slug = config('messaging.emess.'.(string) $purpose.'_template');
 
-        return self::CATALOG[$purpose][0] ?? null;
+        return is_string($slug) && $slug !== '' ? $slug : null;
     }
 
     public static function text(?string $purpose): ?string
     {
-        return self::CATALOG[(string) $purpose][1] ?? null;
+        $text = config('messaging.emess.'.(string) $purpose.'_text');
+        if (is_string($text) && $text !== '') {
+            return $text;
+        }
+
+        return self::DEFAULT_TEXT[(string) $purpose] ?? null;
     }
 
-    /** Variables d'un texte : « {code} » → « code ». @return array<int, string> */
-    public static function variables(string $text): array
+    /** Variables attendues par le modèle : celles de son texte, sinon celle réglée dans .env. */
+    public static function variables(?string $purpose): array
     {
-        preg_match_all('/\{(\w+)\}/', $text, $m);
+        $text = self::text($purpose);
+        if ($text !== null) {
+            preg_match_all('/\{(\w+)\}/', $text, $m);
 
-        return $m[1] ?? [];
+            return $m[1] ?? [];
+        }
+        $var = config('messaging.emess.'.(string) $purpose.'_variable');
+
+        return is_string($var) && $var !== '' ? [$var] : [];
     }
 
-    /**
-     * Le texte du modèle, variables remplies : c'est ce qui part réellement
-     * (et le repli si eMess refuse le nom du modèle).
-     */
+    /** Le texte du modèle, variables remplies (facultatif : null si le texte n'est pas connu). */
     public static function render(string $purpose, array $params): ?string
     {
         $text = self::text($purpose);

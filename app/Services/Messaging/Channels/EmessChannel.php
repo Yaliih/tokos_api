@@ -33,8 +33,9 @@ class EmessChannel implements Channel
         $payload = self::payload($to, $text, $purpose, $context);
 
         $res = $this->post($base.'/sms/send', $payload);
-        // Modèle introuvable ou refusé : on réessaie avec le TEXTE EXACT du modèle approuvé
-        if (isset($payload['template']) && in_array($res->status(), [404, 422], true)) {
+        // Modèle introuvable ou refusé : on réessaie avec le TEXTE EXACT du modèle,
+        // mais seulement s'il est connu (EMESS_CODE_TEXT) — sinon ce serait un refus de plus.
+        if (isset($payload['template']) && SmsTemplates::text($purpose) !== null && in_array($res->status(), [404, 422], true)) {
             $res = $this->post($base.'/sms/send', ['number' => $to, 'message' => $text]);
         }
         if (! $res->successful()) {
@@ -57,19 +58,19 @@ class EmessChannel implements Channel
     public static function payload(string $to, string $text, string $purpose, array $context = []): array
     {
         $slug = SmsTemplates::slug($purpose);
-        $template = $slug ? SmsTemplates::text($purpose) : null;
-        if ($slug === null || $template === null) {
+        $names = $slug ? SmsTemplates::variables($purpose) : [];
+        if ($slug === null || ! $names) {
             return ['number' => $to, 'message' => $text];
         }
         $params = [];
-        foreach (SmsTemplates::variables($template) as $name) {
+        foreach ($names as $name) {
             if (! array_key_exists($name, $context)) {
                 return ['number' => $to, 'message' => $text]; // une variable manque : le modèle ne partirait pas
             }
             $params[$name] = (string) $context[$name];
         }
 
-        return ['number' => $to, 'template' => $slug] + ($params ? ['params' => $params] : []);
+        return ['number' => $to, 'template' => $slug, 'params' => $params];
     }
 
     private function post(string $url, array $payload, bool $retry = true)
