@@ -23,10 +23,22 @@
       const next = current === 'dark' ? 'light' : 'dark';
       root.dataset.theme = next;
       store.set('tokos-theme', next);
-      document.querySelector('meta[name="theme-color"]')?.setAttribute('content', next === 'dark' ? '#16161C' : '#FFFFFF');
+      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next === 'dark' ? '#16161C' : '#FFFFFF'));
       btn.setAttribute('aria-label', next === 'dark' ? 'Passer au thème clair' : 'Passer au thème sombre');
     });
   });
+
+  // La barre du téléphone suit le thème, y compris quand il change tout seul
+  (() => {
+    const scheme = matchMedia('(prefers-color-scheme: dark)');
+    const paint = () => {
+      const root = document.documentElement;
+      const dark = root.dataset.theme ? root.dataset.theme === 'dark' : scheme.matches;
+      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', dark ? '#16161C' : '#FFFFFF'));
+    };
+    scheme.addEventListener?.('change', () => { if (!document.documentElement.dataset.theme) paint(); });
+    paint();
+  })();
 
   // ── Petit message ─────────────────────────────────────────────
   window.tokosToast = (m, err) => toast(m, err);
@@ -755,10 +767,11 @@
       const problem = validate();
       if (problem) return showError(problem);
       // Inscription : envoi du SMS en quittant l'étape du numéro
-      if (next.dataset.sendCodeOn !== undefined && String(index) === next.dataset.sendCodeOn) {
+      if (next.dataset.sendCodeOn !== undefined && String(index) === next.dataset.sendCodeOn && !form.dataset.codeSent) {
         next.disabled = true;
         try {
           await sendCode(form);
+          form.dataset.codeSent = '1'; // un seul SMS par numéro : « Renvoyer » reste disponible
         } catch (e) {
           next.disabled = false;
           return showError(e.message);
@@ -809,6 +822,8 @@
     body.append('phone_code', form.phone_code.value);
     body.append('phone_number', form.phone_number.value.replace(/\D/g, '').replace(/^0+/, ''));
     form.phone_number.value = body.get('phone_number');
+    // Numéro modifié : le prochain « Continuer » renverra un code
+    form.querySelectorAll('[name="phone_number"], [name="phone_code"]').forEach((f) => f.addEventListener('input', () => { delete form.dataset.codeSent; }));
     await send('/api/auth/send-verification-code', body);
     toast('Code envoyé par SMS.');
   }

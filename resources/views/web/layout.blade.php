@@ -35,7 +35,9 @@
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="theme-color" content="#FFFFFF">
+    {{-- La barre du navigateur suit le thème du téléphone --}}
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#16161C" media="(prefers-color-scheme: dark)">
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
     <link rel="manifest" href="/manifest.webmanifest">
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
@@ -57,8 +59,9 @@
         [data-theme="dark"] .splashing .splash, .splashing[data-theme="dark"] .splash { background: #0E0E13; }
         @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]).splashing .splash { background: #0E0E13; } }
         .splash-in { color: #6C5CE7; animation: splash-pop .6s cubic-bezier(.2, 1.4, .4, 1) both; }
-        .splash .splash-in svg { width: 96px !important; height: 96px !important; display: block; }
-        .splash-word { position: absolute; left: 0; right: 0; bottom: calc(40px + env(safe-area-inset-bottom)); text-align: center; font: 800 22px/1 "Plus Jakarta Sans", system-ui, sans-serif; letter-spacing: -0.04em; color: #15151C; }
+        .splash .splash-in svg { width: 64px !important; height: 64px !important; display: block; }
+        @media (max-width: 400px) { .splash .splash-in svg { width: 54px !important; height: 54px !important; } }
+        .splash-word { position: absolute; left: 0; right: 0; bottom: calc(34px + env(safe-area-inset-bottom)); text-align: center; font: 800 19px/1 "Plus Jakarta Sans", system-ui, sans-serif; letter-spacing: .16em; text-transform: uppercase; color: #15151C; }
         .splash-word i { font-style: normal; color: #6C5CE7; } .splash-word .flip { display: inline-block; transform: scaleX(-1); }
         [data-theme="dark"] .splash-in { color: #8B7FF5; } [data-theme="dark"] .splash-word { color: #F2F2F6; } [data-theme="dark"] .splash-word i { color: #B4AAFF; }
         @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .splash-in { color: #8B7FF5; } :root:not([data-theme="light"]) .splash-word { color: #F2F2F6; } }

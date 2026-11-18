@@ -2883,3 +2883,18 @@ a.mention:hover { text-decoration: underline; }
 .showcase-more { padding: 14px 16px; }
 .showcase.is-text .showcase-more { padding: 18px; }
 .showcase-more > p.showcase-text { margin: 0; padding: 0; }
+
+/* ── Petits écrans : rien ne dépasse horizontalement ──────────────────
+   Les étapes d'un formulaire et les pastilles de choix se replient au lieu
+   d'élargir la page (c'était le cas à l'étape « Qu'est-ce qui te plaît ? »). */
+.steps { max-width: 100%; }
+.steps li { min-width: 0; }
+.steps li span:not(.bar) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 430px) {
+  .steps li span:not(.bar) { display: none; } /* on garde les barres de progression */
+}
+.chips-choice { min-width: 0; max-width: 100%; }
+.chip-opt { max-width: 100%; }
+.chip-opt span, .chip-opt-btn { max-width: 100%; height: auto; min-height: 38px; padding: 7px 16px; line-height: 1.25; white-space: normal; text-align: left; }
+.auth, .auth-form, .wizard, .step { max-width: 100%; }
+.auth-form { overflow-x: clip; }
