@@ -482,6 +482,73 @@
     };
     send();
   });
+  // ── Modifier le profil : la photo part tout de suite, ou se supprime après confirmation ──
+  // « Enregistrer » ne sert plus qu'aux textes (nom, pseudo…).
+  const csrfToken = () => (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+  function photoButtons(form, data) {
+    const a = form.querySelector('[data-photo-remove="avatar"]');
+    const c = form.querySelector('[data-photo-remove="cover"]');
+    if (a) a.hidden = !data.has_avatar;
+    if (c) c.hidden = !data.cover;
+  }
+  function photoUpload(form, input, file) {
+    const url = form && form.dataset.photoUrl;
+    if (!url || !file) return;
+    const body = new FormData();
+    body.append('_token', csrfToken());
+    body.append(input.name, file, file.name || 'photo');
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.upload.onprogress = (ev) => { if (ev.lengthComputable && ev.loaded >= ev.total) toast('Photo envoyée, enregistrement…'); };
+    xhr.onload = () => {
+      let data = null;
+      try { data = JSON.parse(xhr.responseText); } catch (e) { /* pas de JSON */ }
+      if (xhr.status >= 400 || !data || !data.ok) {
+        const first = data && data.errors ? Object.values(data.errors)[0] : null;
+        toast((Array.isArray(first) ? first[0] : first) || 'Photo refusée (' + xhr.status + ').', true);
+        return;
+      }
+      input.value = ''; // déjà enregistrée : « Enregistrer » n'a plus à la renvoyer
+      const box = input.closest('[data-preview]').querySelector('[data-preview-box]');
+      if (input.name === 'avatar' && data.avatar) {
+        box.innerHTML = '<img src="' + data.avatar + '" alt="">';
+      } else if (input.name === 'cover' && data.cover) {
+        box.innerHTML = data.cover_type === 'video'
+          ? '<video src="' + data.cover + '#t=0.1" muted playsinline loop></video>'
+          : '<img src="' + data.cover + '" alt="">';
+      }
+      photoButtons(form, data);
+      toast('Photo enregistrée.');
+    };
+    xhr.onerror = () => toast('Réseau trop faible : la photo n\'a pas été envoyée.', true);
+    xhr.send(body);
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-photo-remove]');
+    if (!b) return;
+    const form = b.closest('form');
+    const kind = b.dataset.photoRemove;
+    if (!form || !form.dataset.photoUrl) return;
+    if (!confirm(kind === 'avatar' ? 'Supprimer ta photo de profil ?' : 'Supprimer ta couverture ?')) return;
+    const body = new FormData();
+    body.append('_token', csrfToken());
+    body.append('remove', kind);
+    fetch(form.dataset.photoUrl, { method: 'POST', body, headers: { Accept: 'application/json' }, credentials: 'same-origin' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data || !data.ok) { toast('Suppression impossible.', true); return; }
+        const box = b.closest('[data-preview]').querySelector('[data-preview-box]');
+        if (kind === 'avatar') {
+          box.innerHTML = '<img src="' + data.avatar + '" alt="">';
+        } else {
+          box.innerHTML = '<span class="edit-cover-empty">Ajoute une photo ou une courte vidéo</span>';
+        }
+        photoButtons(form, data);
+        toast('Supprimé.');
+      })
+      .catch(() => toast('Réseau trop faible : suppression impossible.', true));
+  });
   // ── Modifier le profil : aperçu des images choisies ───────────
   document.addEventListener('click', (e) => {
     const b = e.target.closest('[data-preview-pick]');
@@ -523,6 +590,7 @@
       const el = document.createElement(f.type.startsWith('video/') ? 'video' : 'img');
       el.src = url; if (el.tagName === 'VIDEO') { el.muted = true; el.loop = true; el.autoplay = true; el.playsInline = true; }
       box.appendChild(el);
+      photoUpload(e.target.closest('form'), e.target, send);
       const rm = e.target.closest('form').querySelector('[data-remove-cover]');
       if (rm && e.target.name === 'cover') rm.checked = false;
     }

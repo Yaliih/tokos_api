@@ -136,6 +136,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/parametres/mot-de-passe/code', [ActionController::class, 'sendPasswordCode'])->middleware('throttle:5,1');
     Route::post('/parametres/mot-de-passe', [ActionController::class, 'changePassword'])->middleware('throttle:10,1');
     Route::post('/parametres/profil', [ActionController::class, 'updateProfile'])->middleware('throttle:20,1');
+    // Photos (profil et Espace) : enregistrées tout de suite, sans le bouton « Enregistrer »
+    Route::post('/parametres/profil/photo', [ActionController::class, 'updateProfilePhoto'])->middleware('throttle:30,1');
+    Route::post('/espaces/{slug}/photo', [ActionController::class, 'updateSpacePhoto'])->middleware('throttle:30,1');
     Route::get('/espaces/{slug}/modifier', [PageController::class, 'editSpace'])->middleware('feature:spaces');
     Route::post('/espaces/{slug}/modifier', [ActionController::class, 'updateSpace'])->middleware('throttle:20,1');
     Route::post('/espaces', [ActionController::class, 'createSpace'])->middleware('feature:spaces');

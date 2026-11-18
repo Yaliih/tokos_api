@@ -86,7 +86,7 @@
     </form>
 @else
     {{-- ── Page principale : photo, identité, puis les tuiles ── --}}
-    <form class="edit-form card" id="identity-form" method="post" action="{{ $action }}" enctype="multipart/form-data">
+    <form class="edit-form card" id="identity-form" method="post" action="{{ $action }}" enctype="multipart/form-data" data-photo-url="{{ $isUser ? '/parametres/profil/photo' : '/espaces/'.$values['slug'].'/photo' }}">
         @csrf
         <div class="edit-cover" data-preview>
             <div class="edit-cover-media" data-preview-box>
@@ -99,7 +99,7 @@
             <input type="file" name="cover" accept="image/*,video/*" hidden data-preview-input data-max-mb="{{ (int) config('competition.media.max_upload_mb', 50) }}" data-max-video="{{ (int) config('competition.media.max_cover_video_seconds', 30) }}">
             <div class="edit-cover-btns">
                 <button type="button" class="vbtn wide" data-preview-pick>@icon('camera', 'ico-sm')<span>Couverture</span></button>
-                @if ($cover)<label class="vbtn" title="Retirer la couverture"><input type="checkbox" name="remove_cover" value="1" hidden data-remove-cover>@icon('x', 'ico-sm')</label>@endif
+                <button type="button" class="vbtn" title="Retirer la couverture" data-photo-remove="cover" aria-label="Retirer la couverture" @if (! $cover) hidden @endif>@icon('x', 'ico-sm')</button>
             </div>
         </div>
 
@@ -107,10 +107,8 @@
             <span class="edit-avatar-img" data-preview-box><img loading="lazy" decoding="async" src="{{ $avatar }}" alt=""></span>
             <input type="file" name="avatar" accept="image/*" hidden data-preview-input data-max-mb="8">
             <button type="button" class="edit-avatar-btn" data-preview-pick aria-label="Changer la photo de profil">@icon('camera', 'ico-sm')</button>
-            @if (!empty($hasAvatar))
-                {{-- Retirer la photo : le profil reprend l'image par défaut --}}
-                <label class="edit-avatar-del" title="Retirer la photo"><input type="checkbox" name="remove_avatar" value="1" hidden data-remove-avatar>@icon('x', 'ico-sm')<span class="sr-only">Retirer la photo</span></label>
-            @endif
+            {{-- Retirer la photo : confirmation, puis suppression immédiate --}}
+            <button type="button" class="edit-avatar-del" title="Retirer la photo" data-photo-remove="avatar" aria-label="Retirer la photo" @if (empty($hasAvatar)) hidden @endif>@icon('x', 'ico-sm')</button>
         </div>
 
         <div class="edit-fields">

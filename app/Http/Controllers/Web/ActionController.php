@@ -771,6 +771,49 @@ class ActionController extends Controller
     }
 
     /** Photo de profil (image) et couverture (photo ou courte vidéo, type lu dans le fichier). */
+    /** Photo de profil ou couverture d'un compte : enregistrée tout de suite (sans passer par « Enregistrer »). */
+    public function updateProfilePhoto(Request $request)
+    {
+        return $this->savePhoto($request, $request->user(), 'users');
+    }
+
+    /** Photo de profil ou couverture d'un Espace : idem. */
+    public function updateSpacePhoto(Request $request, string $slug)
+    {
+        $space = \App\Models\Space::where('slug', $slug)->firstOrFail();
+        abort_unless($space->canEditInfo($request->user()), 403);
+
+        return $this->savePhoto($request, $space, 'spaces');
+    }
+
+    /** Applique une photo (ou sa suppression) et renvoie les nouvelles adresses. */
+    private function savePhoto(Request $request, \Illuminate\Database\Eloquent\Model $model, string $folder)
+    {
+        $request->validate([
+            'avatar' => 'nullable|file|image|max:8192',
+            'cover' => 'nullable|file|max:'.\App\Services\MediaUploader::maxKb(),
+            'remove' => 'nullable|in:avatar,cover',
+        ], [
+            'avatar.image' => 'La photo de profil doit être une image.',
+            'avatar.max' => 'Photo trop lourde : 8 Mo maximum.',
+        ]);
+        if ($request->input('remove') === 'avatar') {
+            $request->merge(['remove_avatar' => 1]);
+        }
+        if ($request->input('remove') === 'cover') {
+            $request->merge(['remove_cover' => 1]);
+        }
+        $this->applyImages($request, $model, $folder);
+        $model->save();
+
+        return response()->json([
+            'ok' => true,
+            'avatar' => $model->avatar_url,
+            'has_avatar' => (bool) $model->getRawOriginal('avatar'),
+            'cover' => $model->cover ? $model->cover_url : null,
+            'cover_type' => $model->cover_type ?: 'image',
+        ]);
+    }
     private function applyImages(Request $request, \Illuminate\Database\Eloquent\Model $model, string $folder): void
     {
         $disk = \Illuminate\Support\Facades\Storage::disk(config('filesystems.media', 'public'));
