@@ -154,6 +154,54 @@ Artisan::command('admin:creer {--telephone=} {--mot-de-passe=} {--code=} {--pren
 
     return 0;
 })->purpose('Créer (ou promouvoir) un compte admin avec un numéro et un mot de passe');
+// eMess : voir quels modèles existent sur le compte, et tester un envoi sans passer par le site
+Artisan::command('emess:modeles', function () {
+    $c = config('messaging.emess');
+    if (blank($c['app_id']) || blank($c['secret_key'])) {
+        $this->error('EMESS_APP_ID / EMESS_SECRET_KEY manquants dans .env');
+
+        return 1;
+    }
+    $base = rtrim((string) $c['url'], '/');
+    $auth = \Illuminate\Support\Facades\Http::acceptJson()->asJson()->timeout(20)
+        ->post($base.'/auth/token', ['appId' => $c['app_id'], 'secretKey' => $c['secret_key']]);
+    if (! $auth->successful()) {
+        $this->error('Connexion eMess refusée (HTTP '.$auth->status().') : '.mb_substr((string) $auth->body(), 0, 200));
+
+        return 1;
+    }
+    $token = (string) $auth->json('token');
+    $this->info('Connecté à eMess — application '.$c['app_id']);
+    $this->line('');
+    $this->line('Modèles envoyés par Sosa :');
+    $this->line('  code de vérification : '.\App\Services\Messaging\SmsTemplates::slug('code'));
+    $this->line('  message d\'essai     : '.\App\Services\Messaging\SmsTemplates::slug('test'));
+    $this->line('');
+    $this->line('Ce que l\'API répond aux adresses de liste (pour voir les modèles du compte) :');
+    foreach (['templates', 'sms/templates', 'template/list'] as $path) {
+        $res = \Illuminate\Support\Facades\Http::acceptJson()->withToken($token)->timeout(20)->get($base.'/'.$path);
+        $this->line('  GET /'.$path.' → HTTP '.$res->status().'  '.mb_substr((string) $res->body(), 0, 300));
+    }
+
+    return 0;
+})->purpose('eMess : voir les modèles du compte et ceux qu\'utilise Sosa');
+
+Artisan::command('emess:essai {numero}', function (string $numero) {
+    $digits = (string) preg_replace('/\D/', '', $numero);
+    $phone = str_starts_with(trim($numero), '+') ? '+'.$digits : '+243'.ltrim($digits, '0');
+    $text = \App\Services\Messaging\SmsTemplates::render('test', []) ?? 'Message d\'essai Sosa.';
+    $this->line('Envoi vers '.$phone.' avec le modèle « '.\App\Services\Messaging\SmsTemplates::slug('test').' »');
+    try {
+        $ref = app(\App\Services\Messaging\Messenger::class)->channel('sms')->send($phone, $text, 'test');
+        $this->info('Envoyé — '.$ref);
+
+        return 0;
+    } catch (\Throwable $e) {
+        $this->error('Échec : '.$e->getMessage());
+
+        return 1;
+    }
+})->purpose('eMess : envoyer un SMS d\'essai (modèle approuvé) à un numéro');
 
 // Supprimer les pièces des demandes de certification traitées (tous les jours)
 Artisan::command('certification:purge', function () {

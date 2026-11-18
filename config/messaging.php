@@ -18,15 +18,19 @@ return [
         'log' => 'log',
     ],
 
-    // Durée de validité d'un code (minutes)
-    'code_ttl' => (int) env('VERIFICATION_CODE_TTL', 10),
+    // Durée de validité d'un code (minutes). 15 minutes : c'est ce qu'annonce le modèle SMS
+    // approuvé (« Il expire dans 15 minutes ») — ne pas descendre sans changer de modèle.
+    'code_ttl' => (int) env('VERIFICATION_CODE_TTL', 15),
 
-    // eMess (https://emess.cd) : SMS en RDC. Le code passe par un modèle approuvé dans eMess (variable {code}).
+    // eMess (https://emess.cd) : SMS en RDC. eMess n'accepte QUE des textes qui correspondent à un
+    // modèle approuvé sur le compte. On réutilise donc les modèles déjà approuvés de Tuendea
+    // voir App\Services\Messaging\SmsTemplates. Rien de nouveau à faire valider.
     'emess' => [
         'url' => env('EMESS_URL', 'https://emess.cd/api/v1'),
         'app_id' => env('EMESS_APP_ID'),
         'secret_key' => env('EMESS_SECRET_KEY'),
-        'code_template' => env('EMESS_CODE_TEMPLATE', 'sosa_code'),
+        'code_template' => env('EMESS_CODE_TEMPLATE', 'tuendea_code'),
+        'test_template' => env('EMESS_TEST_TEMPLATE', 'tuendea_essai'),
     ],
 
     // Infobip SMS (relais) : la base vient de la page d'accueil du portail Infobip (ex. xxxxx.api.infobip.com)

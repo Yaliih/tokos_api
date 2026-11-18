@@ -28,7 +28,7 @@ class MessagingNotifyTest extends TestCase
     {
         config([
             'messaging.channels' => ['sms'], 'messaging.drivers.sms' => 'emess,infobip',
-            'messaging.emess' => ['url' => 'https://emess.test/api/v1', 'app_id' => 'app', 'secret_key' => 'sec', 'code_template' => 'sosa_code'],
+            'messaging.emess' => ['url' => 'https://emess.test/api/v1', 'app_id' => 'app', 'secret_key' => 'sec', 'code_template' => 'tuendea_code'],
             'messaging.infobip' => ['base_url' => 'ib.test', 'api_key' => 'k', 'sender' => 'Sosa'],
         ]);
         app(Messenger::class)->saveChannels(['sms']);
@@ -42,7 +42,7 @@ class MessagingNotifyTest extends TestCase
             'emess.test/api/v1/sms/send' => Http::response(['id' => 'em1']),
         ]);
         $this->assertTrue(app(Messenger::class)->sendCode('+243812345678', '123456'));
-        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/sms/send') && $r['template'] === 'sosa_code' && $r['params']['code'] === '123456');
+        Http::assertSent(fn ($r) => str_ends_with($r->url(), '/sms/send') && $r['template'] === 'tuendea_code' && $r['params']['code'] === '123456');
     }
 
     public function test_infobip_takes_over_when_emess_fails(): void
@@ -56,6 +56,21 @@ class MessagingNotifyTest extends TestCase
         Http::assertSent(fn ($r) => str_contains($r->url(), 'ib.test/sms/2/text/advanced') && $r['messages'][0]['destinations'][0]['to'] === '243812345678');
     }
 
+    public function test_plain_fallback_uses_the_approved_template_text(): void
+    {
+        $this->smsConfig();
+        Http::fake([
+            'emess.test/api/v1/auth/token' => Http::response(['token' => 'tok']),
+            'emess.test/api/v1/sms/send' => Http::sequence()
+                ->push(['message' => 'modele refuse'], 422)
+                ->push(['id' => 'em2']),
+        ]);
+        $this->assertTrue(app(Messenger::class)->sendCode('+243812345678', '123456'));
+        // Le repli en texte brut doit etre le TEXTE EXACT du modele approuve
+        Http::assertSent(fn ($r) => isset($r['message'])
+            && str_starts_with($r['message'], 'Tuendea : votre code pour changer de mot de passe est 123456.')
+            && str_contains($r['message'], '15 minutes'));
+    }
     public function test_change_password_with_sms_code(): void
     {
         config(['messaging.channels' => ['log']]);

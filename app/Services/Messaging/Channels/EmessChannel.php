@@ -3,6 +3,7 @@
 namespace App\Services\Messaging\Channels;
 
 use App\Services\Messaging\Channel;
+use App\Services\Messaging\SmsTemplates;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -29,20 +30,17 @@ class EmessChannel implements Channel
             throw new RuntimeException('eMess : EMESS_APP_ID et EMESS_SECRET_KEY manquants.');
         }
         $base = rtrim((string) config('messaging.emess.url'), '/');
-        $template = $purpose === 'code' ? (string) config('messaging.emess.code_template') : '';
-        $payload = $template !== '' && isset($context['code'])
-            ? ['number' => $to, 'template' => $template, 'params' => ['code' => (string) $context['code']]]
-            : ['number' => $to, 'message' => $text];
+        $payload = self::payload($to, $text, $purpose, $context);
 
         $res = $this->post($base.'/sms/send', $payload);
-        // Modèle introuvable ou pas encore approuvé : on essaie le texte simple
+        // Modèle introuvable ou refusé : on réessaie avec le TEXTE EXACT du modèle approuvé
         if (isset($payload['template']) && in_array($res->status(), [404, 422], true)) {
             $res = $this->post($base.'/sms/send', ['number' => $to, 'message' => $text]);
         }
         if (! $res->successful()) {
             $why = match ($res->status()) {
                 402 => 'crédit SMS insuffisant',
-                404 => 'modèle introuvable',
+                404 => 'modèle « '.($payload['template'] ?? '?').' » introuvable sur ce compte eMess',
                 422 => 'texte ne correspondant à aucun modèle approuvé',
                 default => 'erreur '.$res->status(),
             };
@@ -50,6 +48,28 @@ class EmessChannel implements Channel
         }
 
         return (string) ($res->json('id') ?? $res->json('data.message_id') ?? '');
+    }
+
+    /**
+     * Ce qui part vers eMess : le modèle approuvé (nom + variables) quand on en a un,
+     * sinon le texte brut. Séparé de l'envoi pour pouvoir le vérifier sans réseau.
+     */
+    public static function payload(string $to, string $text, string $purpose, array $context = []): array
+    {
+        $slug = SmsTemplates::slug($purpose);
+        $template = $slug ? SmsTemplates::text($purpose) : null;
+        if ($slug === null || $template === null) {
+            return ['number' => $to, 'message' => $text];
+        }
+        $params = [];
+        foreach (SmsTemplates::variables($template) as $name) {
+            if (! array_key_exists($name, $context)) {
+                return ['number' => $to, 'message' => $text]; // une variable manque : le modèle ne partirait pas
+            }
+            $params[$name] = (string) $context[$name];
+        }
+
+        return ['number' => $to, 'template' => $slug] + ($params ? ['params' => $params] : []);
     }
 
     private function post(string $url, array $payload, bool $retry = true)

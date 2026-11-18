@@ -120,11 +120,14 @@ class Messenger
         return false;
     }
 
-    /** Code de vérification (modèle « authentication » sur WhatsApp). */
+    /** Code de vérification (modèle approuvé sur eMess, modèle « authentication » sur WhatsApp). */
     public function sendCode(string $to, string $code): bool
     {
-        $ttl = (int) config('messaging.code_ttl', 10);
+        // Le texte est celui du modèle approuvé : c'est lui qui part, et c'est aussi
+        // le repli si eMess refuse le nom du modèle (texte brut).
+        $text = SmsTemplates::render('code', ['code' => $code])
+            ?? "Sosa : ton code est {$code}. Il est valable ".(int) config('messaging.code_ttl', 15).' minutes. Ne le partage avec personne.';
 
-        return $this->send($to, "Sosa : ton code est {$code}. Il est valable {$ttl} minutes. Ne le partage avec personne.", 'code', ['code' => $code]);
+        return $this->send($to, $text, 'code', ['code' => $code]);
     }
 }
