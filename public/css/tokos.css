@@ -3103,3 +3103,10 @@ dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
   .pcomp { padding: 11px 12px; }
   .pcomp-act { display: none; }
 }
+
+/* Compteur « compétitions » cliquable sur le profil, et sa fenêtre */
+.count-btn { background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
+.count-btn:hover { color: var(--primary); }
+.comps-sheet { max-width: 520px; width: calc(100% - 24px); }
+.comps-sheet .pcomps { margin: 0; padding: 0 4px 8px; }
+.comps-sheet .pcomps-head { display: none; }

@@ -466,6 +466,18 @@
     };
     send();
   });
+  // Profil : les compétitions s'ouvrent dans une fenêtre depuis le compteur
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('[data-comps-open]')) {
+      const dlg = document.getElementById('comps-sheet');
+      if (dlg) dlg.showModal();
+      return;
+    }
+    if (e.target.closest('.comps-sheet [data-close]') || (e.target.classList && e.target.classList.contains('comps-sheet'))) {
+      const open = document.getElementById('comps-sheet');
+      if (open) open.close();
+    }
+  });
   // ── Modifier le profil : on choisit, on confirme, et c'est enregistré ──
   // Rien ne part tant qu'on n'a pas touché « ✓ » : le bouton « Enregistrer » du bas ne concerne que les textes.
   const csrfToken = () => (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
