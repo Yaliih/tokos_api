@@ -1,0 +1,86 @@
+<?php
+
+namespace App\Filament\Pages;
+
+use App\Support\Registration;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Actions;
+use Filament\Schemas\Components\Form;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
+use UnitEnum;
+
+/**
+ * Ouvrir ou fermer les inscriptions : utile pendant la bêta pour éviter une affluence non maîtrisée.
+ *
+ * @property-read Schema $form
+ */
+class ManageRegistration extends Page
+{
+    protected string $view = 'filament.pages.manage-features';
+
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
+    protected static string|UnitEnum|null $navigationGroup = 'Réglages';
+
+    protected static ?string $navigationLabel = 'Inscriptions';
+
+    protected static ?string $title = 'Ouverture des inscriptions';
+
+    protected static ?string $slug = 'inscriptions';
+
+    protected static ?int $navigationSort = 3;
+
+    public ?array $data = [];
+
+    public function mount(): void
+    {
+        $this->form->fill(['max' => Registration::limit()]);
+    }
+
+    public function form(Schema $schema): Schema
+    {
+        $etat = Registration::count().' compte'.(Registration::count() > 1 ? 's' : '').' déjà créé'.(Registration::count() > 1 ? 's' : '');
+        $limite = Registration::limit();
+        $statut = $limite === 0 ? 'aucune limite' : ($limite.' comptes maximum'.(Registration::open() ? ' — encore ouverts' : ' — fermés'));
+
+        return $schema
+            ->components([
+                Form::make([
+                    Section::make('Nombre de comptes')
+                        ->description($etat.' · '.$statut.'. Dès que le plafond est atteint, toute nouvelle inscription est refusée et aucun SMS n\'est envoyé.')
+                        ->schema([
+                            TextInput::make('max')
+                                ->label('Comptes maximum (0 = illimité)')
+                                ->numeric()
+                                ->minValue(0)
+                                ->default(0)
+                                ->helperText('Pour la bêta : mets par exemple 50. Les comptes déjà créés comptent.'),
+                        ]),
+                ])
+                    ->livewireSubmitHandler('save')
+                    ->footer([
+                        Actions::make([
+                            Action::make('save')->label('Enregistrer')->submit('save')->keyBindings(['mod+s']),
+                        ]),
+                    ]),
+            ])
+            ->statePath('data');
+    }
+
+    public function save(): void
+    {
+        $max = max(0, (int) ($this->form->getRawState()['max'] ?? 0));
+        Registration::set($max);
+        $this->form->fill(['max' => $max]);
+        Notification::make()->success()
+            ->title('Plafond enregistré')
+            ->body($max === 0 ? 'Inscriptions ouvertes, sans limite.' : 'Limite : '.$max.' comptes.')
+            ->send();
+    }
+}

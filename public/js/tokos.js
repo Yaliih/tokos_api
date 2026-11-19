@@ -1011,10 +1011,10 @@
 
   // ── Inscription : code SMS ────────────────────────────────────
   async function sendCode(form) {
-    const body = new FormData();
-    body.append('phone_code', form.phone_code.value);
-    body.append('phone_number', form.phone_number.value.replace(/\D/g, '').replace(/^0+/, ''));
-    form.phone_number.value = body.get('phone_number');
+    // Tout le formulaire part avec la demande de code : le serveur vérifie le nom, l'âge et le
+    // mot de passe AVANT d'envoyer le SMS (pas de crédit dépensé pour une inscription invalide).
+    form.phone_number.value = form.phone_number.value.replace(/\D/g, '').replace(/^0+/, '');
+    const body = new FormData(form);
     // Numéro modifié : le prochain « Continuer » renverra un code
     form.querySelectorAll('[name="phone_number"], [name="phone_code"]').forEach((f) => f.addEventListener('input', () => { delete form.dataset.codeSent; }));
     await send('/api/auth/send-verification-code', body);
