@@ -415,4 +415,11 @@ class User extends Authenticatable implements \Filament\Models\Contracts\Filamen
             ->pluck('id')
             ->all();
     }
+    /** Les compétitions auxquelles la personne participe (via ses entrées). */
+    public function enteredCompetitions()
+    {
+        return Competition::query()->whereHas('entries', function ($q) {
+            $q->where('participant_type', static::class)->where('participant_id', $this->getKey());
+        });
+    }
 }

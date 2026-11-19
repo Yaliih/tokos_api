@@ -23,7 +23,7 @@
         <h1>{{ $p['name'] }}@if($p['is_verified'])@icon('check-circle', 'verified')@endif</h1>
         <div class="handle">{{ '@'.$p['handle'] }}@if($s['rank']) <span class="chip chip-primary" style="margin-left:6px">@icon('crown')#{{ $s['rank'] }} cette saison</span>@endif</div>
         @if ($owner->bio)<p class="bio">{{ $owner->bio }}</p>@endif
-        <div class="counts"><a href="/{{ '@'.$p['handle'] }}/abonnes"><b>{{ $followers }}</b> abonné{{ $followers > 1 ? 's' : '' }}</a><a href="/{{ '@'.$p['handle'] }}/abonnements"><b>{{ $followingCount }}</b> abonnement{{ $followingCount > 1 ? 's' : '' }}</a><a class="count-btn" href="/@{{ $p['handle'] }}/competitions"><b>{{ $s['organized_count'] }}</b> compétition{{ $s['organized_count'] > 1 ? 's' : '' }}</a></div>
+        <div class="counts"><a href="/{{ '@'.$p['handle'] }}/abonnes"><b>{{ $followers }}</b> abonné{{ $followers > 1 ? 's' : '' }}</a><a href="/{{ '@'.$p['handle'] }}/abonnements"><b>{{ $followingCount }}</b> abonnement{{ $followingCount > 1 ? 's' : '' }}</a><a class="count-btn" href="{{ '/@'.$p['handle'] }}/competitions"><b>{{ $s['organized_count'] }}</b> compétition{{ $s['organized_count'] > 1 ? 's' : '' }}</a></div>
     </div>
 </section>
 
