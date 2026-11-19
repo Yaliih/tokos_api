@@ -129,7 +129,7 @@
                     // Payant : on ajoute des votes à son camp (pas de retrait), l'autre camp est fermé une fois qu'on a choisi
                     $locked = $cost && $mine && ! $isMine;
                 @endphp
-                @if ($i === 1)<span class="vote-total" title="Votes">{{ $m['total_votes'] }}</span>@endif
+                @if ($i === 1)<span class="vote-total" title="Votes">{{ $m['total_votes'] ?: '' }}</span>@endif
                 @if ($e && ($canVote || $isMine))
                     <form method="post" action="/m/{{ $m['id'] }}/vote" data-ajax data-replace=".versus" data-silent @if($cost) data-paid-vote data-cost="{{ $cost }}" data-name="{{ $e['display_name'] }}" @endif>{!! $keep() !!}
                         <input type="hidden" name="entry_id" value="{{ $e['id'] }}">
@@ -148,11 +148,11 @@
         @if ($social)
             @auth
                 <form method="post" action="/c/{{ $comp['slug'] }}/aimer" data-ajax data-like data-silent>@csrf
-                    <button class="act-btn {{ ($comp['liked'] ?? false) ? 'on' : '' }}" aria-pressed="{{ ($comp['liked'] ?? false) ? 'true' : 'false' }}" aria-label="J'aime">@icon('heart')<span data-like-count>{{ $comp['likes_count'] ?? 0 }}</span></button></form>
+                    <button class="act-btn {{ ($comp['liked'] ?? false) ? 'on' : '' }}" aria-pressed="{{ ($comp['liked'] ?? false) ? 'true' : 'false' }}" aria-label="J'aime">@icon('heart')<span data-like-count>{{ ($comp['likes_count'] ?? 0) ?: '' }}</span></button></form>
             @else
-                <a class="act-btn" href="/connexion?suite={{ urlencode($m['url']) }}" aria-label="J'aime">@icon('heart')<span>{{ $comp['likes_count'] ?? 0 }}</span></a>
+                <a class="act-btn" href="/connexion?suite={{ urlencode($m['url']) }}" aria-label="J'aime">@icon('heart')<span>{{ ($comp['likes_count'] ?? 0) ?: '' }}</span></a>
             @endauth
-            @feature('comments')<a class="act-btn" href="{{ $comp['url'] }}?tab=commentaires&duel={{ $m['id'] }}" data-duel="{{ $m['id'] }}" aria-label="Commentaires">@icon('comment')<span>{{ $comp['comments_count'] ?? 0 }}</span></a>@endfeature
+            @feature('comments')<a class="act-btn" href="{{ $comp['url'] }}?tab=commentaires&duel={{ $m['id'] }}" data-duel="{{ $m['id'] }}" aria-label="Commentaires">@icon('comment')<span>{{ ($comp['comments_count'] ?? 0) ?: '' }}</span></a>@endfeature
         @endif
         @if ($showTime)
             @if ($m['status'] === 'voting' && $m['ends_at'])<span class="act-meta" title="Temps restant"><span class="countdown" data-prefix="reste " data-ends="{{ $m['ends_at'] }}"></span></span>

@@ -3070,3 +3070,7 @@ dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
   .side.is-text .side-visual .quote { padding-top: 44px; padding-bottom: 48px; }
   .side.is-text .side-visual .tag img { width: 20px; height: 20px; }
 }
+
+/* Compteurs : quand il n'y a rien (0), on garde l'icône seule — pas de « 0 » */
+.act-btn span:empty, .act-meta span:empty, .vote-total:empty { display: none; }
+.act-btn:has(> span:empty) { gap: 0; }

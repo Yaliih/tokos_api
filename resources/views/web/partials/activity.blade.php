@@ -64,7 +64,7 @@
 
     @if ($pm)
         {{-- Un duel se montre tel quel : votes, j'aime et commentaires dans sa barre --}}
-        <div class="post-body flush">@include('web.partials.versus', ['m' => $pm, 'compact' => true, 'frame' => 'none', 'showTop' => false, 'social' => true, 'showTime' => false])</div>
+        <div class="post-body flush">@include('web.partials.versus', ['m' => $pm, 'compact' => true, 'frame' => 'none', 'showTop' => false, 'social' => true, 'showTime' => false, 'defy' => false])</div>
         @if (($comp['type'] ?? '') === 'challenge')
             {{-- Défi : ce duel n'est qu'un parmi d'autres. Voir tous les duels, ou relever le défi --}}
             @php $dCount = $pc['matches_count'] ?? null; $dEnter = $pc ? (($pc['viewer']['can_enter'] ?? false) && ! ($pc['viewer']['can_manage'] ?? false) && $pc['status'] === 'open') : false; @endphp
@@ -134,18 +134,18 @@
         @if ($comp)
             @auth
                 <form method="post" action="/c/{{ $comp['slug'] }}/aimer" data-ajax data-like data-silent>@csrf
-                    <button class="act-btn {{ ($comp['liked'] ?? false) ? 'on' : '' }}" aria-pressed="{{ ($comp['liked'] ?? false) ? 'true' : 'false' }}" aria-label="J'aime">@icon('heart')<span data-like-count>{{ $comp['likes_count'] ?? 0 }}</span></button></form>
+                    <button class="act-btn {{ ($comp['liked'] ?? false) ? 'on' : '' }}" aria-pressed="{{ ($comp['liked'] ?? false) ? 'true' : 'false' }}" aria-label="J'aime">@icon('heart')<span data-like-count>{{ ($comp['likes_count'] ?? 0) ?: '' }}</span></button></form>
             @else
-                <a class="act-btn" href="/connexion?suite={{ urlencode($a['url']) }}" aria-label="J'aime">@icon('heart')<span>{{ $comp['likes_count'] ?? 0 }}</span></a>
+                <a class="act-btn" href="/connexion?suite={{ urlencode($a['url']) }}" aria-label="J'aime">@icon('heart')<span>{{ ($comp['likes_count'] ?? 0) ?: '' }}</span></a>
             @endauth
-            @feature('comments')<a class="act-btn" href="{{ $comp['url'] }}?tab=commentaires" aria-label="Commentaires">@icon('comment')<span>{{ $comp['comments_count'] ?? 0 }}</span></a>@endfeature
+            @feature('comments')<a class="act-btn" href="{{ $comp['url'] }}?tab=commentaires" aria-label="Commentaires">@icon('comment')<span>{{ ($comp['comments_count'] ?? 0) ?: '' }}</span></a>@endfeature
             @if (($comp['type'] ?? '') === 'challenge')
                 {{-- Les duels du défi, dans une fenêtre --}}
-                <a class="act-btn" href="{{ $comp['url'] }}?tab=duels" data-duels="{{ $comp['slug'] }}" aria-label="Voir les duels">@icon('vs')<span>{{ $comp['matches_count'] ?? 0 }}</span></a>
+                <a class="act-btn" href="{{ $comp['url'] }}?tab=duels" data-duels="{{ $comp['slug'] }}" aria-label="Voir les duels">@icon('vs')<span>{{ ($comp['matches_count'] ?? 0) ?: '' }}</span></a>
             @else
-                @isset($comp['entries_count'])<span class="act-meta" title="Participants">@icon('users'){{ $comp['entries_count'] }}</span>@endisset
+                @isset($comp['entries_count'])<span class="act-meta" title="Participants">@icon('users')<span>{{ $comp['entries_count'] ?: '' }}</span></span>@endisset
             @endif
-            @isset($comp['votes_count'])<span class="act-meta" title="Votes">@icon('arrow-up'){{ $comp['votes_count'] }}</span>@endisset
+            @isset($comp['votes_count'])<span class="act-meta" title="Votes">@icon('arrow-up')<span>{{ $comp['votes_count'] ?: '' }}</span></span>@endisset
         @endif
         <span class="push"></span>
         @if ($cta)
