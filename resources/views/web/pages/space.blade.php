@@ -28,9 +28,10 @@
         @php $label = \App\Support\Rankings::spaceLabel($space); $site = \App\Http\Middleware\SpaceSite::urlFor($space); @endphp
         <div class="handle">{{ $label ?: 'Espace' }}@if($space->location) · {{ $space->location }}@endif</div>
         <div class="space-site-row">@feature('space_sites')
-            <a class="space-site" href="{{ $site ? (request()->secure() ? 'https://' : 'http://').$site.(in_array(request()->getPort(), [80, 443]) ? '' : ':'.request()->getPort()) : '/espaces/'.$space->slug.'/site' }}" target="_blank" rel="noopener">@icon('globe', 'ico-sm'){{ $site ?: 'Voir le site' }}</a>@endfeature
+            {{-- Toujours l'adresse interne : les sous-domaines d'Espaces ne sont pas encore actifs --}}
+            <a class="space-site" href="/espaces/{{ $space->slug }}/site" target="_blank" rel="noopener">@icon('globe', 'ico-sm')Voir le site</a>@endfeature
             {{-- Deux partages : le mini-site (son adresse) et la page de l'Espace sur Sosa --}}
-            <button type="button" class="space-site icon" data-share="{{ $site ? 'https://'.$site : url('/espaces/'.$space->slug) }}" data-title="{{ $space->name }}" data-text="Le site de {{ $space->name }} sur Sosa :" aria-label="Partager le mini-site">@icon('share', 'ico-sm')</button>
+            <button type="button" class="space-site icon" data-share="{{ url('/espaces/'.$space->slug.'/site') }}" data-title="{{ $space->name }}" data-text="Le site de {{ $space->name }} sur Sosa :" aria-label="Partager le mini-site">@icon('share', 'ico-sm')</button>
             <button type="button" class="space-site icon" data-share="{{ url('/espaces/'.$space->slug) }}" data-title="{{ $space->name }}" data-text="{{ $space->name }} sur Sosa :" aria-label="Partager l'Espace">@icon('link', 'ico-sm')</button>
         </div>
         @if ($space->bio)<p class="bio">{{ $space->bio }}</p>@endif
