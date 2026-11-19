@@ -27,6 +27,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @if (request()->attributes->get('siteBase'))<base href="{{ request()->attributes->get('siteBase') }}">@endif
     <title>{{ isset($title) ? $title.' · Sosa' : 'Sosa : défis, duels et concours' }}</title>
+    @if (! empty($noIndex))<meta name="robots" content="noindex, nofollow">@endif
     <meta name="description" content="{{ $description ?? 'Lance des défis, affronte les autres en duel, vote pour tes favoris. Seul ou avec ton Espace.' }}">
     <meta property="og:site_name" content="Sosa">
     <meta property="og:title" content="{{ $title ?? 'Sosa' }}">

@@ -1,2 +1,5 @@
 User-agent: *
 Disallow:
+
+# Plan du site (profils, Espaces, compétitions publiques)
+Sitemap: https://sosa.social/sitemap.xml

@@ -561,9 +561,12 @@ class PageController extends Controller
         $stats = app(SocialController::class)->stats($user, $me);
         $res = $this->activities->forActor($user, null, 20);
 
+        // Profil privé : on demande aux moteurs de ne pas l'indexer
+        $noIndex = (bool) ($user->is_private ?? false);
+
         return view('web.pages.profile', [
             'current' => $me && $me->id === $user->id ? 'profile' : '',
-            'owner' => $user, 's' => $stats,
+            'owner' => $user, 's' => $stats, 'noIndex' => $noIndex,
             'title' => Participant::name($user),
             'description' => 'Classement, badges et duels de '.Participant::name($user).' sur Sosa.',
             'activities' => Presenter::activities($res['items'], $me),

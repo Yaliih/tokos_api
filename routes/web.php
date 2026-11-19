@@ -30,6 +30,25 @@ Route::get('/a/{file}', function (string $file) {
         'Cache-Control' => 'public, max-age=86400',
     ]);
 })->where('file', '[A-Za-z0-9.\-]+');
+// Plan du site : aide Google à trouver les profils, les Espaces et les compétitions publiques
+// (les comptes désactivés et les profils privés n'y sont pas).
+Route::get('/sitemap.xml', function () {
+    $urls = [];
+    \App\Models\User::query()->whereNotNull('username')->where('is_active', true)->where('is_private', false)
+        ->orderByDesc('last_seen_at')->limit(5000)->pluck('username')
+        ->each(function ($u) use (&$urls) { $urls[] = url('/@'.$u); });
+    \App\Models\Space::query()->where('is_active', true)->orderByDesc('id')->limit(2000)->pluck('slug')
+        ->each(function ($s) use (&$urls) { $urls[] = url('/espaces/'.$s); });
+    \App\Models\Competition::query()->whereNull('hidden_at')->orderByDesc('id')->limit(2000)->pluck('slug')
+        ->each(function ($c) use (&$urls) { $urls[] = url('/c/'.$c); });
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>'."\n".'<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">'."\n";
+    foreach ($urls as $u) {
+        $xml .= '  <url><loc>'.htmlspecialchars($u, ENT_XML1).'</loc></url>'."\n";
+    }
+    $xml .= '</urlset>'."\n";
+
+    return response($xml, 200, ['Content-Type' => 'application/xml; charset=utf-8', 'Cache-Control' => 'public, max-age=3600']);
+})->name('sitemap');
 // Pages publiques
 Route::get('/', [PageController::class, 'home']);
 Route::get('/decouvrir', [PageController::class, 'discover']);
