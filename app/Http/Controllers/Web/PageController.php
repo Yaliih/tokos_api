@@ -325,6 +325,11 @@ class PageController extends Controller
             'title' => $competition->title, 'description' => $competition->description ?: implode(' ', $c['rules_summary']),
             'ogImage' => url('/c/'.$competition->slug.'/apercu.png').'?v='.substr(md5((string) $competition->updated_at), 0, 8)];
 
+        // Défi envoyé à un numéro sans compte : l'organisateur peut le relancer sur WhatsApp
+        $data['phoneInvite'] = $me && $competition->canManage($me)
+            ? \App\Models\CompetitionPhoneInvite::where('competition_id', $competition->id)->latest('id')->first()
+            : null;
+
         if ($tab === 'duels') {
             $data['matches'] = $competition->matches()->with(['entryA.participant', 'entryB.participant'])->where('is_bye', false)
                 ->orderByRaw("CASE WHEN status = 'voting' THEN 0 ELSE 1 END")->orderByDesc('id')->limit(30)->get()

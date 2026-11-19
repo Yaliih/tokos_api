@@ -3074,3 +3074,11 @@ dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
 /* Compteurs : quand il n'y a rien (0), on garde l'icône seule — pas de « 0 » */
 .act-btn span:empty, .act-meta span:empty, .vote-total:empty { display: none; }
 .act-btn:has(> span:empty) { gap: 0; }
+
+/* Défi envoyé par numéro : bandeau de relance WhatsApp */
+.invite-wa { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; margin-bottom: 10px; }
+.invite-wa-txt { display: flex; align-items: center; gap: 10px; flex: 1 1 220px; min-width: 0; font-size: .88rem; color: var(--text-2); }
+.invite-wa-txt .ico { color: #25D366; flex: none; }
+.invite-wa-txt b { color: var(--text); }
+.invite-wa .btn { flex: none; }
+@media (max-width: 560px) { .invite-wa .btn { width: 100%; justify-content: center; } }
