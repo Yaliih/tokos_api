@@ -11,8 +11,8 @@ class MessengerSms implements SmsServiceInterface
     {
     }
 
-    public function send(string $phoneNumber, string $message): bool
+    public function send(string $phoneNumber, string $message, array $context = []): bool
     {
-        return $this->messenger->send($phoneNumber, $message, 'invitation');
+        return $this->messenger->send($phoneNumber, $message, 'invitation', $context);
     }
 }

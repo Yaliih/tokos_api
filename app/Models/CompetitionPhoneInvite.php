@@ -50,6 +50,18 @@ class CompetitionPhoneInvite extends Model
         return 'https://wa.me/'.$digits.'?text='.rawurlencode($this->text());
     }
 
+    /** Variables du modèle SMS approuvé (voir App\Services\Messaging\SmsTemplates). */
+    public function smsContext(): array
+    {
+        $who = trim(($this->inviter?->first_name ?? '').' '.($this->inviter?->last_name ?? '')) ?: 'Quelqu\'un';
+
+        return [
+            'app_name' => (string) config('messaging.app_name', 'Sosa'),
+            'name' => mb_substr($who, 0, 40),
+            'title' => mb_substr((string) ($this->competition?->title ?? 'un duel'), 0, 40),
+            'lien' => mb_substr($this->url(), 0, 64),
+        ];
+    }
     public function text(): string
     {
         $who = trim(($this->inviter?->first_name ?? '').' '.($this->inviter?->last_name ?? '')) ?: 'Quelqu\'un';

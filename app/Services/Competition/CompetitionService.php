@@ -521,7 +521,7 @@ class CompetitionService
         if ($phoneInvite) {
             $invite = \App\Models\CompetitionPhoneInvite::where('competition_id', $competition->id)->latest('id')->first();
             try {
-                if ($invite && app(\App\Services\SmsServiceInterface::class)->send($invite->fullPhone(), $invite->text())) {
+                if ($invite && app(\App\Services\SmsServiceInterface::class)->send($invite->fullPhone(), $invite->text(), $invite->smsContext())) {
                     $invite->update(['sms_sent_at' => now()]);
                 }
             } catch (\Throwable $e) {

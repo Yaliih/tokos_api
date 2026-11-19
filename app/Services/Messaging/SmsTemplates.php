@@ -27,6 +27,7 @@ class SmsTemplates
     /** Textes des modèles approuvés (utilisables tels quels dans eMess). */
     public const DEFAULT_TEXT = [
         'code' => '[{app_name}] Votre code de vérification est {code}. Il expire dans {validity_minutes} min. Ne le partagez pas.',
+        'invitation' => '[{app_name}] {name} te défie : « {title} ». Relève le défi : {lien}',
     ];
 
     public static function slug(?string $purpose): ?string

@@ -40,6 +40,9 @@ return [
 
         // Message d'essai : vide tant qu'aucun modèle d'essai n'est approuvé
         'test_template' => env('EMESS_TEST_TEMPLATE'),
+        // Défi envoyé par SMS à un numéro sans compte (vide tant qu'aucun modèle n'est approuvé)
+        'invitation_template' => env('EMESS_INVITATION_TEMPLATE'),
+        'invitation_text' => env('EMESS_INVITATION_TEXT'),
         'test_variable' => env('EMESS_TEST_VARIABLE'),
         'test_text' => env('EMESS_TEST_TEXT'),
     ],

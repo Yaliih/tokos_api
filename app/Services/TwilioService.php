@@ -19,7 +19,7 @@ class TwilioService implements SmsServiceInterface
         $this->from = config('services.twilio.from');
     }
 
-    public function send(string $phoneNumber, string $message): bool
+    public function send(string $phoneNumber, string $message, array $context = []): bool
     {
         try {
             $this->client->messages->create($phoneNumber, [

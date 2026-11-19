@@ -4,5 +4,5 @@ namespace App\Services;
 
 interface SmsServiceInterface
 {
-    public function send(string $phoneNumber, string $message): bool;
+    /** \ : variables du modèle eMess (app_name, name, title, lien…) */
 }
