@@ -28,6 +28,7 @@ class SmsTemplates
     public const DEFAULT_TEXT = [
         'code' => '[{app_name}] Votre code de vérification est {code}. Il expire dans {validity_minutes} min. Ne le partagez pas.',
         'invitation' => '[{app_name}] {name} te défie : « {title} ». Relève le défi : {lien}',
+        'reminder' => '[{app_name}] {title} se termine dans {heures} h. Dernière chance : {lien}',
     ];
 
     public static function slug(?string $purpose): ?string

@@ -48,6 +48,9 @@ class CompetitionsTick extends Command
             ->limit(500)->get()
             ->each(fn ($m) => $this->safely(fn () => $matches->notifyEndingSoon($m)));
 
+        // 2 ter. Relance des compétitions qui se terminent (défi, concours, tournoi)
+        $this->remindCompetitions();
+
         // 3. Lancements programmés (concours et tournois)
         Competition::where('status', Competition::STATUS_OPEN)
             ->whereIn('type', [Competition::TYPE_CONTEST, Competition::TYPE_TOURNAMENT])
@@ -97,5 +100,52 @@ class CompetitionsTick extends Command
             Log::error('competitions:tick '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
             $this->error($e->getMessage());
         }
+    }
+    /**
+     * Prévient l'organisateur (cloche + push, et SMS si un modèle est réglé) quand sa compétition
+     * se termine bientôt. Le délai et le texte viennent de la configuration, pas du code.
+     */
+    private function remindCompetitions(): void
+    {
+        $hours = max(1, (int) config('competition.durations.competition_reminder_hours', 2));
+        $sms = filled(config('messaging.emess.reminder_template'));
+
+        Competition::query()
+            ->whereIn('type', [Competition::TYPE_CHALLENGE, Competition::TYPE_CONTEST, Competition::TYPE_TOURNAMENT])
+            ->whereNotIn('status', [Competition::STATUS_COMPLETED, Competition::STATUS_CANCELLED])
+            ->whereBetween('ends_at', [now(), now()->addHours($hours)])
+            ->limit(200)->get()
+            ->each(function (Competition $c) use ($hours, $sms) {
+                // Une seule relance par compétition (pas de colonne à ajouter : on passe par le cache)
+                if (! \Illuminate\Support\Facades\Cache::add('comp-ending-'.$c->id, 1, now()->addDays(2))) {
+                    return;
+                }
+                $title = '« '.$c->title.' » se termine dans '.$hours.' h';
+                $body = 'Dernière chance : partage le lien et relance les votes.';
+
+                $org = $c->organizer;
+                $ids = $org instanceof \App\Models\User
+                    ? [$org->id]
+                    : ($org ? $org->managers()->pluck('users.id')->all() : []);
+
+                if ($ids) {
+                    app(\App\Services\Social\NotificationService::class)
+                        ->send($ids, 'competition.ending_soon', $title, $body, $c->url(), $org);
+                }
+
+                if ($sms && $ids) {
+                    $context = [
+                        'app_name' => (string) config('messaging.app_name', 'Sosa'),
+                        'title' => mb_substr((string) $c->title, 0, 40),
+                        'heures' => $hours,
+                        'lien' => mb_substr($c->url(), 0, 64),
+                    ];
+                    $text = \App\Services\Messaging\SmsTemplates::render('reminder', $context) ?? $title;
+                    foreach (\App\Models\User::whereIn('id', $ids)->get() as $user) {
+                        app(\App\Services\Messaging\Messenger::class)
+                            ->send($user->phone_code.$user->phone_number, $text, 'reminder', $context);
+                    }
+                }
+            });
     }
 }

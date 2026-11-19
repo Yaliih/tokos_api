@@ -61,6 +61,8 @@ return [
         'max_match_hours'      => 168,
         'invitation_expiry_hours' => 72,
         'ending_soon_minutes'  => 60,
+        // Relance des défis / concours / tournois : combien d'heures avant la fin ({heures} dans le SMS)
+        'competition_reminder_hours' => (int) env('COMPETITION_REMINDER_HOURS', 2),
         // Tournoi, à partir du 2e tour : temps laissé à chaque qualifié pour envoyer sa nouvelle prestation.
         // Fixé par la plateforme (pas par l'organisateur). Rien envoyé à temps : l'autre passe.
         'round_submission_hours' => 24,

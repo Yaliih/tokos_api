@@ -27,6 +27,7 @@ class NotifyRules
             'match.started' => ['Ton duel commence', true],
             'match.lead' => ['Tu passes en tête / tu perds la tête', false],
             'match.ending_soon' => ['Ton duel se termine bientôt', true],
+        'competition.ending_soon' => ['Ta compétition se termine bientôt', true],
             'match.won' => ['Tu as gagné', true],
             'match.lost' => ['Tu as perdu', true],
             'match.draw' => ['Égalité', true],

@@ -43,6 +43,12 @@ return [
         // Défi envoyé par SMS à un numéro sans compte (vide tant qu'aucun modèle n'est approuvé)
         'invitation_template' => env('EMESS_INVITATION_TEMPLATE'),
         'invitation_text' => env('EMESS_INVITATION_TEXT'),
+        // Relance « ça se termine dans X h » : vide = pas de SMS de relance
+        'reminder_template' => env('EMESS_REMINDER_TEMPLATE'),
+        'reminder_text' => env('EMESS_REMINDER_TEXT'),
+
+        // Canal privilégié pour défier un numéro : whatsapp (gratuit) ou sms
+        'invite_channel' => env('INVITE_CHANNEL', 'whatsapp'),
         'test_variable' => env('EMESS_TEST_VARIABLE'),
         'test_text' => env('EMESS_TEST_TEXT'),
     ],
