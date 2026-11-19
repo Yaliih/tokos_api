@@ -77,6 +77,7 @@
     <div class="card invite-wa">
         <span class="invite-wa-txt">@icon('whatsapp')<span><b>{{ $phoneInvite->fullPhone() }}</b> n'a pas encore de compte : envoie-lui le défi sur WhatsApp.</span></span>
         <a class="btn btn-sm" href="{{ $phoneInvite->whatsappUrl() }}" target="_blank" rel="noopener">@icon('whatsapp', 'ico-sm')Envoyer sur WhatsApp</a>
+        <button type="button" class="btn btn-sm btn-ghost" data-share="{{ $phoneInvite->url() }}" data-title="Un défi t'attend sur Sosa" data-text="{{ $phoneInvite->text() }}">@icon('share', 'ico-sm')Copier le lien</button>
     </div>
 @endisset
 {{-- Une seule action principale, toujours visible (collée en bas sur téléphone) --}}
