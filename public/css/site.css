@@ -122,3 +122,44 @@
 
 /* Mot « sosa » du pied de page : le second s retourné face au premier */
 .s-sosa i { font-style: normal; } .s-sosa .flip { display: inline-block; transform: scaleX(-1); }
+
+/* ══ Mini-site d'Espace : passe visuelle (hiérarchie, respiration, boutons) ══
+   Objectif : une vraie page d'accueil, pas une suite de blocs centrés. */
+
+/* Hero : couverture en fond, voile sombre, contenu aligné en bas à gauche */
+.s-hero { position: relative; min-height: clamp(320px, 46vh, 520px); display: flex; align-items: flex-end; overflow: hidden; }
+.s-hero > img, .s-hero > video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.s-hero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(8,8,12,.10) 0%, rgba(8,8,12,.45) 45%, rgba(8,8,12,.88) 100%); }
+.s-hero-in { position: relative; z-index: 1; width: 100%; max-width: 1080px; margin: 0 auto; padding: 40px 22px 34px; color: #fff; text-align: left; }
+.s-hero .s-logo { width: 84px; height: 84px; border-radius: 24px; border: 3px solid rgba(255,255,255,.85); box-shadow: 0 10px 30px rgba(0,0,0,.35); object-fit: cover; margin-bottom: 14px; background: #111; }
+.s-hero .s-kicker { margin: 0 0 6px; font-size: .78rem; font-weight: 800; letter-spacing: .10em; text-transform: uppercase; color: rgba(255,255,255,.78); }
+.s-hero h1 { margin: 0 0 10px; font-size: clamp(1.7rem, 5vw, 2.9rem); line-height: 1.08; letter-spacing: -.02em; font-weight: 900; color: #fff; }
+.s-hero .s-bio { margin: 0 0 18px; max-width: 620px; font-size: clamp(.95rem, 2.2vw, 1.05rem); line-height: 1.55; color: rgba(255,255,255,.86); }
+.s-hero .s-ctas { display: flex; flex-wrap: wrap; gap: 10px; }
+.s-hero .s-btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 20px; border-radius: 999px; font-weight: 800; font-size: .95rem; text-decoration: none; background: #fff; color: #111; border: 1px solid transparent; transition: transform .15s, opacity .15s; }
+.s-hero .s-btn:hover { transform: translateY(-1px); opacity: .94; }
+.s-hero .s-btn-ghost { background: rgba(255,255,255,.10); color: #fff; border-color: rgba(255,255,255,.35); backdrop-filter: blur(6px); }
+
+/* Sections : largeur de lecture maîtrisée, titres nets, chiffres lisibles */
+.s-hero ~ * { max-width: 1080px; margin-left: auto; margin-right: auto; }
+.s-main, .s-section { padding: 34px 22px; }
+.s-section h2, .s-main h2 { margin: 0 0 16px; font-size: clamp(1.15rem, 3vw, 1.4rem); letter-spacing: -.01em; }
+.s-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin: -26px auto 0; position: relative; z-index: 2; max-width: 620px; padding: 0 16px; }
+.s-stat { background: #fff; border: 1px solid rgba(0,0,0,.07); border-radius: 16px; padding: 14px 10px; text-align: center; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.s-stat b { display: block; font-size: 1.35rem; line-height: 1.1; }
+.s-stat span { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: #6b7280; }
+@media (prefers-color-scheme: dark) {
+  .s-stat { background: #17171d; border-color: rgba(255,255,255,.09); box-shadow: none; }
+  .s-stat span { color: #9ca3af; }
+}
+
+/* Mobile : hero plus compact, boutons pleine largeur */
+@media (max-width: 640px) {
+  .s-hero { min-height: 62vh; }
+  .s-hero-in { padding: 28px 16px 26px; }
+  .s-hero .s-logo { width: 68px; height: 68px; border-radius: 20px; }
+  .s-hero .s-ctas { flex-direction: column; }
+  .s-hero .s-btn { justify-content: center; }
+  .s-main, .s-section { padding: 26px 16px; }
+  .s-stats { margin-top: -22px; }
+}
