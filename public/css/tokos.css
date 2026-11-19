@@ -3110,3 +3110,16 @@ dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
 .comps-sheet { max-width: 520px; width: calc(100% - 24px); }
 .comps-sheet .pcomps { margin: 0; padding: 0 4px 8px; }
 .comps-sheet .pcomps-head { display: none; }
+
+/* Page « Compétitions » d'un profil : onglets, tri, liste */
+.pcomp-page { padding: 4px 0 20px; }
+.pcomp-page h1 { display: flex; align-items: center; gap: 8px; margin: 0 0 14px; font-size: 1.3rem; }
+.pcomp-page h1 .ico { color: var(--primary); }
+.pcomp-tabs { display: flex; gap: 6px; margin-bottom: 10px; border-bottom: 1px solid var(--border); }
+.pcomp-tab { padding: 10px 12px; font-weight: 800; font-size: .9rem; color: var(--text-3); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.pcomp-tab b { font-size: .78rem; opacity: .7; margin-left: 4px; }
+.pcomp-tab.on { color: var(--text); border-bottom-color: var(--primary); }
+.pcomp-sorts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; font-size: .8rem; color: var(--text-3); }
+.pcomp-sorts a { padding: 5px 10px; border-radius: 999px; font-weight: 700; }
+.pcomp-sorts a.on { background: var(--primary-soft); color: var(--primary); }
+.pcomp-pager { margin-top: 14px; }

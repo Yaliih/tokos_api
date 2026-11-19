@@ -633,6 +633,36 @@ class PageController extends Controller
     }
 
     /** Le petit site de l'Espace (lions.sosa.social, ou l'aperçu /espaces/lions/site). ?modele= pour essayer un autre modèle. */
+    /** Compétitions d'un profil : deux onglets (créées / participées) et un tri. */
+    public function profileCompetitions(Request $request, string $handle)
+    {
+        $handle = ltrim($handle, '@');
+        $user = User::where('username', $handle)->firstOrFail();
+        $me = $request->user();
+
+        $tab = $request->query('onglet') === 'participe' ? 'participe' : 'creees';
+        $tri = in_array($request->query('tri'), ['recentes', 'bientot', 'anciennes'], true) ? $request->query('tri') : 'recentes';
+
+        $made = $user->organizedCompetitions();
+        $joined = method_exists($user, 'enteredCompetitions') ? $user->enteredCompetitions() : null;
+
+        $q = $tab === 'participe' && $joined ? $joined : $made;
+        $q = match ($tri) {
+            'bientot' => $q->orderByRaw('ends_at IS NULL')->orderBy('ends_at'),
+            'anciennes' => $q->oldest('id'),
+            default => $q->latest('id'),
+        };
+
+        return view('web.pages.profile-competitions', [
+            'current' => 'profile', 'hideRail' => true, 'noIndex' => false,
+            'owner' => $user, 'me' => $me, 'tab' => $tab, 'tri' => $tri,
+            'title' => 'Compétitions de '.Participant::name($user),
+            'description' => 'Les compétitions de '.Participant::name($user).' sur Sosa : créées et participées.',
+            'comps' => $q->paginate(20)->withQueryString(),
+            'madeCount' => $user->organizedCompetitions()->count(),
+            'joinedCount' => $joined ? $joined->count() : 0,
+        ]);
+    }
     public function spaceSite(Request $request, string $slug)
     {
         abort_if(\App\Support\Features::off('spaces'), 404);

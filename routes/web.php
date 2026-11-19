@@ -32,6 +32,9 @@ Route::get('/a/{file}', function (string $file) {
 })->where('file', '[A-Za-z0-9.\-]+');
 // Plan du site : aide Google à trouver les profils, les Espaces et les compétitions publiques
 // (les comptes désactivés et les profils privés n'y sont pas).
+// Compétitions d'un profil : page dédiée avec onglets et tri
+Route::get('/@{handle}/competitions', [\App\Http\Controllers\Web\PageController::class, 'profileCompetitions'])
+    ->where('handle', '[A-Za-z0-9_.]+')->name('profile.competitions');
 Route::get('/sitemap.xml', function () {
     $urls = [];
     \App\Models\User::query()->whereNotNull('username')->where('is_active', true)->where('is_private', false)
