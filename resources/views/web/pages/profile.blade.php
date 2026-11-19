@@ -74,4 +74,6 @@
     <form method="post" action="/deconnexion">@csrf<button class="setting-row danger">@icon('log-out')<span class="grow">Se déconnecter</span></button></form>
 </dialog>
 @endif
+@include('web.partials.profile-competitions', ['owner' => $user])
+
 @endsection
