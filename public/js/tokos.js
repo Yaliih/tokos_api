@@ -374,7 +374,6 @@
       dlg.className = 'sheet share-sheet';
       dlg.innerHTML = '<div class="sheet-head"><h2>Partager</h2><button type="button" class="icon-btn" data-close aria-label="Fermer">&times;</button></div>'
         + '<div class="share-list"><a class="share-item wa" data-share-wa target="_blank" rel="noopener"><span class="share-ico">' + (document.querySelector('[data-icon-wa]')?.innerHTML || 'W') + '</span>WhatsApp</a>'
-        + '<a class="share-item" data-share-img download hidden><span class="share-ico"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21"/></svg></span>Image pour le statut</a>'
         + '<button type="button" class="share-item" data-share-copy><span class="share-ico">' + (document.querySelector('[data-icon-link]')?.innerHTML || '') + '</span>Copier le lien</button>'
         + '<button type="button" class="share-item" data-share-more hidden><span class="share-ico">' + (document.querySelector('[data-icon-more]')?.innerHTML || '') + '</span>Autres applis</button>'
         + '<button type="button" class="share-item report" data-share-report hidden><span class="share-ico">' + (document.querySelector('[data-icon-flag]')?.innerHTML || '') + '</span>Signaler</button></div>';
@@ -388,23 +387,8 @@
     const more = dlg.querySelector('[data-share-more]');
     more.hidden = !navigator.share;
     more.onclick = async () => { dlg.close(); try { await navigator.share({ title, text, url }); } catch (err) { /* annulé */ } };
-    // Duel ou compétition : on envoie aussi l'image (les deux visages, « VS ») quand le téléphone le permet
-    const path = new URL(url).pathname;
-    const imgUrl = /^\/(m|c)\/[^/]+$/.test(path) ? path + '/apercu.png' : null;
-    const img = dlg.querySelector('[data-share-img]');
-    img.hidden = !imgUrl;
-    if (imgUrl) { img.href = imgUrl; img.setAttribute('download', 'tokos-' + path.split('/').pop() + '.png'); img.onclick = () => setTimeout(() => dlg.close(), 100); }
-    dlg.querySelector('[data-share-wa]').onclick = async (ev) => {
-      const wa = ev.currentTarget.href;
-      if (!(imgUrl && navigator.canShare)) { setTimeout(() => dlg.close(), 100); return; }
-      ev.preventDefault(); dlg.close();
-      try {
-        const blob = await (await fetch(imgUrl)).blob();
-        const file = new File([blob], 'tokos.png', { type: 'image/png' });
-        if (navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text: text + ' ' + url }); return; }
-      } catch (err) { if (err && err.name === 'AbortError') return; }
-      location.href = wa;
-    };
+    // WhatsApp : le lien et le message, sans image fabriquée (l'aperçu du lien suffit)
+    dlg.querySelector('[data-share-wa]').onclick = () => setTimeout(() => dlg.close(), 100);
     const rep = dlg.querySelector('[data-share-report]');
     rep.hidden = !b.dataset.report;
     rep.onclick = () => { dlg.close(); openReport(b.dataset.report); };
