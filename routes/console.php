@@ -194,6 +194,23 @@ Artisan::command('fonts:local', function () {
 
     return 0;
 })->purpose('Télécharger la police du site pour la servir localement (plus rapide, zéro requête externe)');
+// Plafonner le nombre de comptes (bêta) : php artisan registration:limit 50  (0 = illimité)
+Artisan::command('registration:limit {max?}', function () {
+    $current = \App\Support\Registration::limit();
+    if ($this->argument('max') === null) {
+        $this->line('Plafond actuel : '.($current === 0 ? 'illimité' : $current.' comptes'));
+        $this->line('Comptes existants : '.\App\Support\Registration::count());
+
+        return 0;
+    }
+    $max = max(0, (int) $this->argument('max'));
+    \App\Support\Registration::set($max);
+    $this->info($max === 0 ? 'Inscriptions de nouveau ouvertes, sans plafond.' : 'Plafond fixé à '.$max.' comptes.');
+    $this->line('Comptes existants : '.\App\Support\Registration::count().' — '.
+        ($max === 0 || \App\Support\Registration::count() < $max ? 'inscriptions ouvertes.' : 'inscriptions fermées.'));
+
+    return 0;
+})->purpose('Plafonner le nombre de comptes (utile pendant la bêta)');
 // eMess : voir quels modèles existent sur le compte, et tester un envoi sans passer par le site
 Artisan::command('emess:modeles', function () {
     $c = config('messaging.emess');

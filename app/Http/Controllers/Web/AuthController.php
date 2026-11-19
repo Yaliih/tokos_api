@@ -50,6 +50,9 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request)
     {
+        if (! \App\Support\Registration::open()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['phone_number' => \App\Support\Registration::message()]);
+        }
         app(\App\Services\Competition\AntiFraud::class)->checkSignup();
         $user = DB::transaction(function () use ($request) {
             $code = VerificationCode::where('phone_code', $request->phone_code)

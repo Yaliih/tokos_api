@@ -137,6 +137,9 @@ class AuthController extends Controller
     /** Inscription web SPA : crée l'utilisateur puis ouvre une session. */
     public function webRegister(RegisterRequest $request): JsonResponse
     {
+        if (! \App\Support\Registration::open()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['phone_number' => \App\Support\Registration::message()]);
+        }
         app(\App\Services\Competition\AntiFraud::class)->checkSignup();
         $user = $this->createUserFromRegistration($request);
         app(\App\Services\Competition\AntiFraud::class)->markSignup($user);
@@ -157,6 +160,9 @@ class AuthController extends Controller
     /** Inscription mobile : crée l'utilisateur puis retourne un token. */
     public function mobileRegister(RegisterRequest $request): JsonResponse
     {
+        if (! \App\Support\Registration::open()) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['phone_number' => \App\Support\Registration::message()]);
+        }
         app(\App\Services\Competition\AntiFraud::class)->checkSignup();
         $user = $this->createUserFromRegistration($request);
         app(\App\Services\Competition\AntiFraud::class)->markSignup($user);
