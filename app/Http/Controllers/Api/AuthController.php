@@ -188,6 +188,11 @@ class AuthController extends Controller
 
     public function sendVerificationCode(SendVerificationCodeRequest $request): JsonResponse
     {
+        // Bêta : plafond atteint ou inscriptions fermées — on ne dépense pas un SMS pour rien
+        if (! \App\Support\Registration::open()) {
+            throw ValidationException::withMessages(['phone_number' => [\App\Support\Registration::message()]]);
+        }
+
         $phoneCode = $request->phone_code;
         $phoneNumber = $request->phone_number;
         $fullPhone = $phoneCode.$phoneNumber;
