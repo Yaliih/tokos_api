@@ -128,6 +128,67 @@ class AdminTest extends TestCase
         $this->actingAs($admin)->get('/admin/statistiques')->assertOk()->assertSee('Statistiques');
     }
 
+    /** Le bloc « Visiteurs sans compte » : des personnes, pas des rechargements, et le choix de période. */
+    public function test_guest_block_counts_people_and_views(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        $now = now();
+
+        // 2 visiteurs sans compte (6 vues à eux deux) + 1 membre (1 vue)
+        $vues = [
+            ['g:aaa', null, 1, 0], ['g:aaa', null, 2, 0], ['g:aaa', null, 3, 0],
+            ['g:bbb', null, 1, 0], ['g:bbb', null, 2, 0], ['g:bbb', null, 3, 0],
+            ['u:'.$admin->id, $admin->id, 1, 0],
+            ['g:aaa', null, 4, 20], // trop ancienne pour 7 jours, comptée dans « Tout »
+        ];
+        foreach ($vues as [$cle, $userId, $contenu, $jours]) {
+            \Illuminate\Support\Facades\DB::table('content_views')->insert([
+                'viewable_type' => \App\Models\Competition::class,
+                'viewable_id' => $contenu,
+                'viewer_key' => $cle,
+                'user_id' => $userId,
+                'created_at' => $now->copy()->subDays($jours),
+            ]);
+        }
+
+        // « Tout » : 8 vues, 7 sans compte, 2 visiteurs différents, 1 membre
+        $this->actingAs($admin)->get('/admin/statistiques?periode=tout')
+            ->assertOk()
+            ->assertSee('Visiteurs sans compte')
+            ->assertSee('personnes différentes')
+            ->assertSee('7 vues sans compte')
+            ->assertSee('88 %')
+            ->assertSee('7 vues sur 8')
+            ->assertSee('personne avec un compte')
+            ->assertSee('depuis le '.$now->copy()->subDays(20)->locale('fr')->translatedFormat('j M Y'));
+
+        // « 7 jours » ne garde que les vues récentes : 7 vues, 6 sans compte
+        $this->actingAs($admin)->get('/admin/statistiques?periode=7j')
+            ->assertOk()
+            ->assertSee('6 vues sur 7')
+            ->assertDontSee('7 vues sur 8');
+    }
+
+    /** Le tri de période change vraiment les chiffres, sans recharger la page. */
+    public function test_guest_block_period_buttons_recalculate(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        \Illuminate\Support\Facades\DB::table('content_views')->insert([
+            'viewable_type' => \App\Models\Competition::class, 'viewable_id' => 1,
+            'viewer_key' => 'g:zzz', 'user_id' => null, 'created_at' => now()->subMinutes(30),
+        ]);
+
+        $this->actingAs($admin);
+        Livewire::test(\App\Filament\Widgets\Stats\Guests::class)
+            ->assertSee('personne différente')
+            ->assertSee('1 vue sans compte')
+            ->assertSee('1 vue sur 1')
+            ->call('choisirPeriode', 'tout')
+            ->assertSee('1 vue sur 1')
+            ->call('choisirPeriode', '24h')
+            ->assertSee('1 vue sur 1');
+    }
+
     public function test_photos_are_shrunk_on_upload(): void
     {
         \Illuminate\Support\Facades\Storage::fake('public');
