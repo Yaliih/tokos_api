@@ -280,7 +280,9 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Le code n\'a pas pu être envoyé. Réessaie.',
+                'message' => str_starts_with($fullPhone, '+243')
+                    ? 'Le SMS n\'a pas pu être envoyé pour le moment. Réessaie dans un instant.'
+                    : 'L\'envoi de SMS n\'est pas encore disponible pour ce pays : utilise un numéro de la RDC (+243).',
             ], 500);
         }
 
@@ -354,7 +356,9 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Le code n\'a pas pu être envoyé. Réessaie.',
+                'message' => str_starts_with($fullPhone, '+243')
+                    ? 'Le SMS n\'a pas pu être envoyé pour le moment. Réessaie dans un instant.'
+                    : 'L\'envoi de SMS n\'est pas encore disponible pour ce pays : utilise un numéro de la RDC (+243).',
             ], 500);
         }
 
