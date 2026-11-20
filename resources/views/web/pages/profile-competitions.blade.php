@@ -1,10 +1,13 @@
 @extends('web.layout')
 @section('content')
 @php
-    $handle = $owner->username;
-    $qs = fn (array $o) => '/@'.$handle.'/competitions?'.http_build_query(array_filter(array_merge(['onglet' => $tab, 'tri' => $tri], $o)));
+    // Page des compétitions d'un profil ou d'un Espace : le contrôleur fournit l'adresse
+    $base = $pageUrl ?? ('/@'.$owner->username.'/competitions');
+    $back = $backUrl ?? ('/@'.$owner->username);
+    $showJoined = $showJoined ?? true;
+    $qs = fn (array $o) => $base.'?'.http_build_query(array_filter(array_merge(['onglet' => $tab, 'tri' => $tri], $o)));
 @endphp
-<div class="back-line"><a href="{{ '/@'.$handle }}">@icon('arrow-left', 'ico-sm')<span>{{ $ownerName }}</span></a></div>
+<div class="back-line"><a href="{{ $back }}">@icon('arrow-left', 'ico-sm')<span>{{ $ownerName }}</span></a></div>
 
 <div class="pcomp-page">
     <h1>@icon('trophy', 'ico-sm')Compétitions</h1>
@@ -13,9 +16,11 @@
         <a class="pcomp-tab {{ $tab === 'creees' ? 'on' : '' }}" href="{{ $qs(['onglet' => 'creees']) }}" role="tab">
             Créées <b>{{ $madeCount }}</b>
         </a>
-        <a class="pcomp-tab {{ $tab === 'participe' ? 'on' : '' }}" href="{{ $qs(['onglet' => 'participe']) }}" role="tab">
-            Participées <b>{{ $joinedCount }}</b>
-        </a>
+        @if ($showJoined)
+            <a class="pcomp-tab {{ $tab === 'participe' ? 'on' : '' }}" href="{{ $qs(['onglet' => 'participe']) }}" role="tab">
+                Participées <b>{{ $joinedCount }}</b>
+            </a>
+        @endif
     </div>
 
     <div class="pcomp-sorts">

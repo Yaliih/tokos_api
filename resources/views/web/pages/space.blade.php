@@ -55,6 +55,7 @@
 <div class="feed">
     @forelse (\App\Http\Controllers\Web\PageController::feedBlocks($activities) as $b) @if ($b['type'] === 'post') @include('web.partials.activity', ['a' => $b['item']]) @else @include('web.partials.brief', ['items' => $b['items']]) @endif @empty <div class="card empty"><p>Pas encore d'activité.</p></div> @endforelse
 </div>
-@include('web.partials.profile-competitions', ['owner' => $space])
+{{-- Compétitions de l'Espace : un lien vers la page dédiée --}}
+<a class="space-site" href="/espaces/{{ $space->slug }}/competitions">@icon('trophy', 'ico-sm')Voir les compétitions de l'Espace</a>
 
 @endsection

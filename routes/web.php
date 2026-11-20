@@ -33,6 +33,8 @@ Route::get('/a/{file}', function (string $file) {
 // Plan du site : aide Google à trouver les profils, les Espaces et les compétitions publiques
 // (les comptes désactivés et les profils privés n'y sont pas).
 // Compétitions d'un profil : page dédiée avec onglets et tri
+// Compétitions d'un Espace : même page que pour un profil
+Route::get('/espaces/{slug}/competitions', [\App\Http\Controllers\Web\PageController::class, 'spaceCompetitions'])->name('space.competitions');
 Route::get('/@{handle}/competitions', [\App\Http\Controllers\Web\PageController::class, 'profileCompetitions'])
     ->where('handle', '[A-Za-z0-9_.]+')->name('profile.competitions');
 Route::get('/sitemap.xml', function () {

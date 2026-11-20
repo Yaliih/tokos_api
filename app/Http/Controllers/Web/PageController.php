@@ -633,6 +633,33 @@ class PageController extends Controller
     }
 
     /** Le petit site de l'Espace (lions.sosa.social, ou l'aperçu /espaces/lions/site). ?modele= pour essayer un autre modèle. */
+    /** Compétitions d'un Espace : même page que pour un profil, sans onglet « participées ». */
+    public function spaceCompetitions(Request $request, string $slug)
+    {
+        $space = Space::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        $tri = in_array($request->query('tri'), ['recentes', 'bientot', 'anciennes'], true) ? $request->query('tri') : 'recentes';
+
+        $q = $space->organizedCompetitions();
+        $q = match ($tri) {
+            'bientot' => $q->orderByRaw('ends_at IS NULL')->orderBy('ends_at'),
+            'anciennes' => $q->oldest('id'),
+            default => $q->latest('id'),
+        };
+
+        return view('web.pages.profile-competitions', [
+            'current' => 'spaces', 'noIndex' => false,
+            'owner' => $space, 'me' => $request->user(), 'tab' => 'creees', 'tri' => $tri,
+            'ownerName' => $space->name,
+            'pageUrl' => '/espaces/'.$space->slug.'/competitions',
+            'backUrl' => '/espaces/'.$space->slug,
+            'showJoined' => false,
+            'title' => 'Compétitions de '.$space->name,
+            'description' => 'Les compétitions organisées par '.$space->name.' sur Sosa.',
+            'comps' => $q->paginate(20)->withQueryString(),
+            'madeCount' => $space->organizedCompetitions()->count(),
+            'joinedCount' => 0,
+        ]);
+    }
     /** Compétitions d'un profil : deux onglets (créées / participées) et un tri. */
     public function profileCompetitions(Request $request, string $handle)
     {
@@ -655,7 +682,7 @@ class PageController extends Controller
 
         return view('web.pages.profile-competitions', [
             'current' => 'profile', 'noIndex' => false,
-            'owner' => $user, 'me' => $me, 'tab' => $tab, 'tri' => $tri, 'ownerName' => Participant::name($user),
+            'owner' => $user, 'me' => $me, 'tab' => $tab, 'tri' => $tri, 'ownerName' => Participant::name($user), 'pageUrl' => '/@'.$user->username.'/competitions', 'backUrl' => '/@'.$user->username, 'showJoined' => true,
             'title' => 'Compétitions de '.Participant::name($user),
             'description' => 'Les compétitions de '.Participant::name($user).' sur Sosa : créées et participées.',
             'comps' => $q->paginate(20)->withQueryString(),
