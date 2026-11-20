@@ -19,8 +19,29 @@ class Views
 {
     public const COOKIE = 'tokos_vid';
 
+    /** Robots, crawlers, aperçus de liens : on ne les compte pas comme des visiteurs. */
+    public static function isBot(Request $request): bool
+    {
+        $ua = strtolower((string) $request->userAgent());
+        if ($ua !== '' && preg_match('/bot|crawl|spider|slurp|preview|headless|phantom|monitor|uptime|curl|wget|python-requests|axios|facebookexternalhit|whatsapp|telegrambot|discord|embedly|pinterest|linkedinbot|twitterbot|google-inspectiontool|lighthouse/', $ua)) {
+            return true;
+        }
+        // Pas de navigateur du tout
+        if ($ua === '') {
+            return true;
+        }
+        // Une page HTML demandée : un vrai navigateur accepte text/html
+        $accept = (string) $request->header('Accept', '');
+
+        return $accept !== '' && ! str_contains($accept, 'text/html');
+    }
     public static function record(Request $request, Model $model): void
     {
+        // Robots, aperçus de liens et outils : ce ne sont pas des visiteurs
+        if (self::isBot($request)) {
+            return;
+        }
+
         $user = $request->user() ?? $request->user('sanctum');
         if ($user) {
             $key = 'u:'.$user->id;

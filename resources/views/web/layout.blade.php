@@ -27,7 +27,12 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     @if (request()->attributes->get('siteBase'))<base href="{{ request()->attributes->get('siteBase') }}">@endif
     <title>{{ isset($title) ? $title.' · Sosa' : 'Sosa : défis, duels et concours' }}</title>
-    @if (! empty($noIndex))<meta name="robots" content="noindex, nofollow">@endif
+    @php
+        // Connexion, inscription, mot de passe : jamais dans Google (ce n'est pas du contenu)
+        $authPage = request()->is('connexion*', 'inscription*', 'mot-de-passe*', 'verification*', 'code*');
+    @endphp
+    @if (! empty($noIndex) || $authPage)<meta name="robots" content="noindex, follow">@endif
+    <link rel="canonical" href="{{ url()->current() }}">
     <meta name="description" content="{{ $description ?? 'Lance des défis, affronte les autres en duel, vote pour tes favoris. Seul ou avec ton Espace.' }}">
     <meta property="og:site_name" content="Sosa">
     <meta property="og:title" content="{{ $title ?? 'Sosa' }}">
