@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets\Stats;
 
 use Filament\Widgets\Widget;
+use Livewire\Attributes\Url;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -15,6 +16,10 @@ class Guests extends Widget
 
     protected int|string|array $columnSpan = 'full';
 
+    /** Période choisie, gardée dans l'URL (?periode=24h) et pilotée par les boutons du bloc. */
+    #[Url(as: 'periode')]
+    public string $periode = '7j';
+
     public static function canView(): bool
     {
         return true;
@@ -22,7 +27,7 @@ class Guests extends Widget
 
     protected function getViewData(): array
     {
-        $periode = in_array(request('periode'), ['24h', '7j', '30j', 'tout'], true) ? request('periode') : '7j';
+        $periode = in_array($this->periode, ['24h', '7j', '30j', 'tout'], true) ? $this->periode : '7j';
         $from = match ($periode) {
             '24h' => now()->subDay(),
             '7j' => now()->subDays(7),

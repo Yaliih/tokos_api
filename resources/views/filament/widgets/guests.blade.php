@@ -15,12 +15,12 @@
     <x-slot name="headerEnd">
         <div class="flex flex-wrap items-center gap-1">
             @foreach ($periodes as $k => $label)
-                <a href="?periode={{ $k }}"
+                <button type="button" wire:click="$set('periode', '{{ $k }}')"
                    @class([
                        'rounded-lg px-2.5 py-1 text-xs font-semibold transition',
                        'bg-primary-50 text-primary-700 dark:bg-primary-400/10 dark:text-primary-400' => $periode === $k,
                        'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/5' => $periode !== $k,
-                   ])>{{ $label }}</a>
+                   ])>{{ $label }}</button>
             @endforeach
         </div>
     </x-slot>
