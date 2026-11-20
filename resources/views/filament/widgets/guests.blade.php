@@ -1,36 +1,40 @@
 @php
     $periodes = ['24h' => '24 h', '7j' => '7 jours', '30j' => '30 jours', 'tout' => 'Tout'];
+    $cartes = [
+        ['label' => 'Visiteurs', 'valeur' => number_format($guests, 0, ',', ' '), 'note' => number_format($guestPeople, 0, ',', ' ').' personne'.($guestPeople > 1 ? 's' : '').' différente'.($guestPeople > 1 ? 's' : ''), 'icone' => 'heroicon-o-user-group'],
+        ['label' => 'Part des vues', 'valeur' => $part.' %', 'note' => 'visiteurs / membres', 'icone' => 'heroicon-o-chart-pie'],
+        ['label' => 'Membres connectés', 'valeur' => number_format($members, 0, ',', ' '), 'note' => 'vues avec un compte', 'icone' => 'heroicon-o-check-badge'],
+        ['label' => 'Total des vues', 'valeur' => number_format($total, 0, ',', ' '), 'note' => $periodes[$periode], 'icone' => 'heroicon-o-eye'],
+    ];
 @endphp
+
 <x-filament::section>
     <x-slot name="heading">Visiteurs sans compte</x-slot>
     <x-slot name="description">Les personnes qui viennent sans s'inscrire : combien, et quelle part des vues.</x-slot>
 
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
-        @foreach ($periodes as $k => $label)
-            <a href="?periode={{ $k }}" style="padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;text-decoration:none;{{ $periode === $k ? 'background:#6C5CE7;color:#fff' : 'background:#f3f4f6;color:#374151' }}">{{ $label }}</a>
-        @endforeach
-    </div>
+    <x-slot name="headerEnd">
+        <div class="flex flex-wrap items-center gap-1">
+            @foreach ($periodes as $k => $label)
+                <a href="?periode={{ $k }}"
+                   @class([
+                       'rounded-lg px-2.5 py-1 text-xs font-semibold transition',
+                       'bg-primary-50 text-primary-700 dark:bg-primary-400/10 dark:text-primary-400' => $periode === $k,
+                       'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/5' => $periode !== $k,
+                   ])>{{ $label }}</a>
+            @endforeach
+        </div>
+    </x-slot>
 
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">
-        <div style="padding:14px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb">
-            <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase">Visiteurs</div>
-            <div style="font-size:26px;font-weight:800">{{ number_format($guests, 0, ',', ' ') }}</div>
-            <div style="font-size:12px;color:#6b7280">{{ number_format($guestPeople, 0, ',', ' ') }} personnes différentes</div>
-        </div>
-        <div style="padding:14px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb">
-            <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase">Part des vues</div>
-            <div style="font-size:26px;font-weight:800">{{ $part }} %</div>
-            <div style="font-size:12px;color:#6b7280">visiteurs / membres</div>
-        </div>
-        <div style="padding:14px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb">
-            <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase">Membres connectés</div>
-            <div style="font-size:26px;font-weight:800">{{ number_format($members, 0, ',', ' ') }}</div>
-            <div style="font-size:12px;color:#6b7280">vues avec un compte</div>
-        </div>
-        <div style="padding:14px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb">
-            <div style="font-size:12px;font-weight:700;color:#6b7280;text-transform:uppercase">Total des vues</div>
-            <div style="font-size:26px;font-weight:800">{{ number_format($total, 0, ',', ' ') }}</div>
-            <div style="font-size:12px;color:#6b7280">{{ $periodes[$periode] }}</div>
-        </div>
+    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach ($cartes as $c)
+            <div class="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-950/5 dark:bg-white/5 dark:ring-white/10">
+                <div class="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                    @svg($c['icone'], 'h-4 w-4')
+                    {{ $c['label'] }}
+                </div>
+                <div class="mt-2 text-2xl font-semibold text-gray-950 dark:text-white">{{ $c['valeur'] }}</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $c['note'] }}</div>
+            </div>
+        @endforeach
     </div>
 </x-filament::section>
