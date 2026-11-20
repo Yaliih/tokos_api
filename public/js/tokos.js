@@ -969,6 +969,9 @@
     }
 
     next.addEventListener('click', async () => {
+      // Après être revenu en arrière (erreur d'âge, de pays…), on repart de l'étape affichée
+      const affichee = allSteps.findIndex((s) => s.classList.contains('active') && !s.hidden);
+      if (affichee >= 0) index = affichee;
       const problem = validate();
       if (problem) return showError(problem);
       // Inscription : envoi du SMS en quittant l'étape du numéro
@@ -1028,11 +1031,15 @@
     const field = form.querySelector('[name="' + name + '"]');
     const step = field && field.closest('[data-step]');
     if (!step) return false;
-    const all = Array.from(form.querySelectorAll('[data-step]')).filter((s) => !s.hidden);
-    const i = all.indexOf(step);
-    if (i < 0) return false;
-    all.forEach((s, k) => s.classList.toggle('active', k === i));
-    form.querySelectorAll('[data-step-dot]').forEach((d, k) => { d.classList.toggle('current', k === i); d.classList.toggle('done', k < i); });
+    const cible = Number(step.dataset.step);
+    if (Number.isNaN(cible)) return false;
+    // Les étapes et les pastilles portent le même numéro : on s'aligne dessus
+    form.querySelectorAll('[data-step]').forEach((s) => s.classList.toggle('active', s === step));
+    form.querySelectorAll('[data-step-dot]').forEach((d) => {
+      const k = Number(d.dataset.stepDot);
+      d.classList.toggle('current', k === cible);
+      d.classList.toggle('done', k < cible);
+    });
     step.scrollIntoView({ block: 'center', behavior: 'smooth' });
     if (field.focus) field.focus({ preventScroll: true });
     // Le message s'affiche dans l'étape concernée, pas à l'étape du code
