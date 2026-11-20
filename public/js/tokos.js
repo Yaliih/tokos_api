@@ -1057,11 +1057,13 @@
         : /pr[eé]nom|nom/i.test(msg) ? 'first_name'
         : /mot de passe|password/i.test(msg) ? 'password'
         : null;
-      if (champ && goToStepOf(form, champ)) {
+      if (champ) {
+        // On revient sur le champ fautif PUIS on relance l'erreur : l'assistant ne doit pas
+        // avancer vers l'étape du code tant que le SMS n'est pas parti.
+        goToStepOf(form, champ);
         const step = form.querySelector('[name="' + champ + '"]')?.closest('[data-step]');
         const box = step && step.querySelector('[data-step-error]');
         if (box) { box.querySelector('span').textContent = msg; box.hidden = false; }
-        return;
       }
       throw e;
     }
