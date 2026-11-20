@@ -12,23 +12,31 @@
     <x-slot name="heading">Visiteurs sans compte</x-slot>
     <x-slot name="description">Les personnes qui viennent sans s'inscrire : combien, et quelle part des vues.</x-slot>
 
-    <div class="mb-4 flex flex-wrap items-center gap-1" role="group" aria-label="Période">
+    {{-- Styles en ligne + variables du panneau : s'adapte au thème clair comme sombre --}}
+    <style>
+        .gsv-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 16px; }
+        .gsv-tab { border: 0; background: transparent; color: inherit; opacity: .55; font: inherit; font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 8px; cursor: pointer; }
+        .gsv-tab:hover { background: rgba(128,128,128,.14); opacity: 1; }
+        .gsv-tab.on { background: rgba(128,128,128,.16); opacity: 1; color: var(--primary-600); }
+        .gsv-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+        .gsv-card { border-radius: 12px; padding: 14px; border: 1px solid rgba(128,128,128,.22); background: rgba(128,128,128,.06); }
+        .gsv-label { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; opacity: .6; }
+        .gsv-value { font-size: 26px; font-weight: 700; line-height: 1.1; margin: 4px 0 2px; }
+        .gsv-note { font-size: 12px; opacity: .6; }
+    </style>
+
+    <div class="gsv-tabs" role="group" aria-label="Période">
         @foreach ($periodes as $k => $label)
-            <button type="button" wire:click="$set('periode', '{{ $k }}')"
-                @class([
-                    'rounded-lg px-2.5 py-1 text-xs font-semibold transition',
-                    'bg-primary-50 text-primary-700 dark:bg-primary-400/10 dark:text-primary-400' => $periode === $k,
-                    'text-gray-500 hover:bg-gray-50 dark:text-gray-400 dark:hover:bg-white/5' => $periode !== $k,
-                ])>{{ $label }}</button>
+            <button type="button" class="gsv-tab {{ $periode === $k ? 'on' : '' }}" wire:click="$set('periode', '{{ $k }}')">{{ $label }}</button>
         @endforeach
     </div>
 
-    <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+    <div class="gsv-grid">
         @foreach ($cartes as $c)
-            <div class="rounded-xl bg-gray-50 p-4 ring-1 ring-gray-950/5 dark:bg-white/5 dark:ring-white/10">
-                <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">{{ $c['label'] }}</div>
-                <div class="mt-1 text-2xl font-semibold text-gray-950 dark:text-white">{{ $c['valeur'] }}</div>
-                <div class="text-xs text-gray-500 dark:text-gray-400">{{ $c['note'] }}</div>
+            <div class="gsv-card">
+                <div class="gsv-label">{{ $c['label'] }}</div>
+                <div class="gsv-value">{{ $c['valeur'] }}</div>
+                <div class="gsv-note">{{ $c['note'] }}</div>
             </div>
         @endforeach
     </div>
