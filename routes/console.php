@@ -14,6 +14,8 @@ Schedule::command('verification:clean')->everyTenMinutes();
 // ⭐ Moteur de compétition : clôtures de duels, lancements, rappels (chaque minute)
 // En production, une seule entrée cron suffit :  * * * * * php /chemin/artisan schedule:run
 // En local :  php artisan schedule:work
+// Prevenir Bing (IndexNow) une fois par jour
+Schedule::command('indexnow:ping')->daily()->withoutOverlapping();
 Schedule::command('competitions:tick')->everyMinute()->withoutOverlapping();
 
 // Ajoute largeur / hauteur aux vidéos déjà publiées (pour les afficher dans leur format dès le départ)
