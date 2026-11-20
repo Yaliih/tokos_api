@@ -1049,51 +1049,51 @@
     return true;
   }
 
-  // Affiche un message d'erreur sous le champ concerné (et en notification) : il est toujours visible
+  // Message d'erreur affiché UNE seule fois, juste sous le champ concerné
   function stepError(form, name, msg) {
     form.querySelectorAll('.step-err').forEach((n) => n.remove());
     const field = name ? form.querySelector('[name="' + name + '"]') : null;
     const host = field ? (field.closest('.field') || field.parentElement) : (form.querySelector('[data-step-error]') || form);
-    if (host) {
-      const p = document.createElement('p');
-      p.className = 'step-err';
-      p.textContent = msg;
-      host.appendChild(p);
-      host.scrollIntoView({ block: 'center', behavior: 'smooth' });
-    }
-    const box = form.querySelector('[data-step-error]');
-    if (box && box.querySelector('span')) {
-      box.querySelector('span').textContent = msg;
-      box.hidden = false;
-    }
-    toast(msg, true);
+    if (!host) return;
+    const p = document.createElement('p');
+    p.className = 'step-err';
+    p.textContent = msg;
+    host.appendChild(p);
+    host.scrollIntoView({ block: 'center', behavior: 'smooth' });
   }
+
   async function sendCode(form) {
-    // Tout le formulaire part avec la demande de code : le serveur vérifie le nom, l'âge et le
-    // mot de passe AVANT d'envoyer le SMS (pas de crédit dépensé pour une inscription invalide).
+    // Tout le formulaire part avec la demande de code : le serveur vérifie le nom, l'âge, le pays
+    // et le mot de passe AVANT d'envoyer le SMS (pas de crédit dépensé pour une inscription invalide).
     form.phone_number.value = form.phone_number.value.replace(/\D/g, '').replace(/^0+/, '');
     const body = new FormData(form);
-    // Numéro modifié : le prochain « Continuer » renverra un code
     form.querySelectorAll('[name="phone_number"], [name="phone_code"]').forEach((f) => f.addEventListener('input', () => { delete form.dataset.codeSent; }));
+
+    let res = null;
+    let data = null;
     try {
-      await send('/api/auth/send-verification-code', body);
-    } catch (e) {
-      const msg = (e && e.message) ? e.message : 'Impossible d\'envoyer le code.';
-      window.__lastCodeError = msg;
-      // On revient sur le champ fautif plutôt que de laisser la personne bloquée à l'étape du code
-      const champ = /ans|naissance|âge|age/i.test(msg) ? 'birth_date'
-        : /pr[eé]nom|nom/i.test(msg) ? 'first_name'
-        : /mot de passe|password/i.test(msg) ? 'password'
-        : null;
-      // On revient sur le champ fautif, on y affiche la vraie raison, et on marque l'erreur
-      // comme traitée : l'assistant ne doit ni avancer, ni écraser ce message par un « code non envoyé ».
-      const cible = champ || (/indicatif|pays|num[eé]ro/i.test(msg) ? 'phone_code' : null);
-      if (cible) goToStepOf(form, cible);
-      // Message affiché sous le champ concerné (et en notification) : jamais silencieux
-      stepError(form, cible, msg);
-      e.handled = true;
-      throw e;
+      res = await fetch('/api/auth/send-verification-code', {
+        method: 'POST',
+        body,
+        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+      });
+      try { data = await res.json(); } catch (err) { data = null; }
+    } catch (err) {
+      stepError(form, null, 'Réseau trop faible : le code n\'a pas pu être envoyé. Réessaie.');
+      throw Object.assign(new Error('reseau'), { handled: true });
     }
+
+    // Refus du serveur : on affiche SON message, sous le bon champ
+    if (!res.ok) {
+      const errors = (data && data.errors) ? data.errors : {};
+      const field = Object.keys(errors)[0] || null;
+      const msg = (field && errors[field] && errors[field][0]) || (data && data.message) || 'Le code n\'a pas pu être envoyé. Réessaie.';
+      if (field) goToStepOf(form, field);
+      stepError(form, field, msg);
+      throw Object.assign(new Error(msg), { handled: true });
+    }
+
     toast('Code envoyé par SMS.');
   }
   const resend = document.getElementById('send-code');
