@@ -212,19 +212,35 @@ class AuthController extends Controller
     {
         // On vérifie tout le formulaire AVANT d'envoyer le SMS (nom, âge, mot de passe) :
         // un code envoyé pour une inscription invalide, c'est un crédit perdu.
-        $rules = [
+        $request->validate([
             'first_name' => 'sometimes|required|string|min:2|max:60',
-            'birth_date' => 'sometimes|required|date|before_or_equal:'.now()->subYears((int) env('MIN_AGE', 13))->toDateString(),
             'password' => 'sometimes|required|string|min:6|confirmed',
-        ];
-        $request->validate($rules, [
+        ], [
             'first_name.required' => 'Ton prénom est obligatoire.',
-            'birth_date.required' => 'Ta date de naissance est obligatoire.',
-            'birth_date.before_or_equal' => 'Il faut avoir au moins '.(int) env('MIN_AGE', 13).' ans pour créer un compte.',
             'password.required' => 'Choisis un mot de passe.',
             'password.min' => 'Mot de passe : 6 caractères minimum.',
             'password.confirmed' => 'Les deux mots de passe ne sont pas identiques.',
         ]);
+
+        // Âge : vérifié ici, avant le SMS, et REFUSÉ si la date manque (fermé par défaut)
+        $birth = $request->input('birth_date');
+        $age = null;
+        if (is_string($birth) && trim($birth) !== '') {
+            try {
+                $age = \Carbon\Carbon::parse($birth)->age;
+            } catch (\Throwable) {
+                $age = null;
+            }
+        }
+        $minAge = (int) env('MIN_AGE', 13);
+        \Illuminate\Support\Facades\Log::info('inscription: age verifie', ['birth_date' => $birth, 'age' => $age, 'min' => $minAge]);
+        if ($age === null || $age < $minAge) {
+            throw ValidationException::withMessages([
+                'birth_date' => [is_string($birth) && trim($birth) !== ''
+                    ? 'Il faut avoir au moins '.$minAge.' ans pour créer un compte.'
+                    : 'Ta date de naissance est obligatoire.'],
+            ]);
+        }
         // Bêta : plafond atteint ou inscriptions fermées — on ne dépense pas un SMS pour rien
         if (! \App\Support\Registration::open()) {
             throw ValidationException::withMessages(['phone_number' => [\App\Support\Registration::message()]]);
