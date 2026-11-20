@@ -27,7 +27,9 @@ class Guests extends Widget
 
     protected function getViewData(): array
     {
-        $periode = in_array($this->periode, ['24h', '7j', '30j', 'tout'], true) ? $this->periode : '7j';
+        // Lue dans l'URL (?periode=24h) : un simple rechargement suffit, pas besoin de Livewire
+        $choix = request('periode', $this->periode);
+        $periode = in_array($choix, ['24h', '7j', '30j', 'tout'], true) ? $choix : '7j';
         $from = match ($periode) {
             '24h' => now()->subDay(),
             '7j' => now()->subDays(7),

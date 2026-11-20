@@ -27,7 +27,7 @@
 
     <div class="gsv-tabs" role="group" aria-label="Période">
         @foreach ($periodes as $k => $label)
-            <button type="button" class="gsv-tab {{ $periode === $k ? 'on' : '' }}" wire:click="$set('periode', '{{ $k }}')">{{ $label }}</button>
+            <a href="?periode={{ $k }}" class="gsv-tab {{ $periode === $k ? 'on' : '' }}" style="text-decoration:none">{{ $label }}</a>
         @endforeach
     </div>
 
