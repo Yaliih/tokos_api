@@ -208,6 +208,10 @@ class AuthController extends Controller
             throw ValidationException::withMessages(['phone_number' => [\App\Support\Registration::message()]]);
         }
 
+        // Pays non encore ouvert : refus avant tout envoi de SMS
+        if (! \App\Support\Registration::allowsCountry($request->phone_code)) {
+            throw ValidationException::withMessages(['phone_code' => [\App\Support\Registration::countryMessage()]]);
+        }
         $phoneCode = $request->phone_code;
         $phoneNumber = $request->phone_number;
         $fullPhone = $phoneCode.$phoneNumber;

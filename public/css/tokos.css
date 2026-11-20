@@ -3123,3 +3123,16 @@ dialog.confirm-sheet .sheet-head h2 { font-size: 1.05rem; }
 .pcomp-sorts a { padding: 5px 10px; border-radius: 999px; font-weight: 700; }
 .pcomp-sorts a.on { background: var(--primary-soft); color: var(--primary); }
 .pcomp-pager { margin-top: 14px; }
+
+/* Menus déroulants (pays, indicatifs, villes) : même allure que les autres champs */
+select.input, .input select {
+  appearance: none; -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888888' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 16px;
+  padding-right: 34px; cursor: pointer;
+}
+select.input option, .input select option { background: var(--surface); color: var(--text); }
+@media (prefers-color-scheme: dark) {
+  select.input, .input select { background-color: var(--surface-2); color: var(--text); border-color: var(--border); }
+  select.input option, .input select option { background: #17171d; color: #f5f5f7; }
+}

@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Support\Registration;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -40,7 +41,7 @@ class ManageRegistration extends Page
 
     public function mount(): void
     {
-        $this->form->fill(['max' => Registration::limit()]);
+        $this->form->fill(['max' => Registration::limit(), 'countries' => Registration::countries()]);
     }
 
     public function form(Schema $schema): Schema
@@ -62,6 +63,14 @@ class ManageRegistration extends Page
                                 ->default(0)
                                 ->helperText('Pour la bêta : mets par exemple 50. Les comptes déjà créés comptent.'),
                         ]),
+                    Section::make('Pays autorisés')
+                        ->description('Laisse vide pour accepter tous les pays. Sinon, ajoute les indicatifs (ex. +243, +242) : les inscriptions venant d\'un autre pays seront refusées AVANT l\'envoi du SMS.')
+                        ->schema([
+                            TagsInput::make('countries')
+                                ->label('Indicatifs autorisés')
+                                ->placeholder('+243')
+                                ->helperText('Un indicatif par étiquette. Vide = tous les pays.'),
+                        ]),
                 ])
                     ->livewireSubmitHandler('save')
                     ->footer([
@@ -75,9 +84,12 @@ class ManageRegistration extends Page
 
     public function save(): void
     {
-        $max = max(0, (int) ($this->form->getRawState()['max'] ?? 0));
+        $state = $this->form->getRawState();
+        $max = max(0, (int) ($state['max'] ?? 0));
+        $countries = (array) ($state['countries'] ?? []);
         Registration::set($max);
-        $this->form->fill(['max' => $max]);
+        Registration::setCountries($countries);
+        $this->form->fill(['max' => $max, 'countries' => Registration::countries()]);
         Notification::make()->success()
             ->title('Plafond enregistré')
             ->body($max === 0 ? 'Inscriptions ouvertes, sans limite.' : 'Limite : '.$max.' comptes.')

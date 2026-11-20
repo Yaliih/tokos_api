@@ -13,6 +13,8 @@ class Registration
 {
     public const KEY = 'registration.limit';
 
+    public const COUNTRIES = 'registration.countries';
+
     public static function limit(): int
     {
         try {
@@ -41,6 +43,43 @@ class Registration
         return (int) User::count();
     }
 
+    /** Indicatifs autorisés (ex. ['+243', '+242']). Vide = tous les pays. */
+    public static function countries(): array
+    {
+        try {
+            $value = Setting::find(self::COUNTRIES)?->value;
+        } catch (\Throwable) {
+            $value = null;
+        }
+        if (is_string($value)) {
+            $value = preg_split('/[\s,;]+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+        }
+
+        return array_values(array_filter(array_map(fn ($c) => trim((string) $c), (array) $value)));
+    }
+
+    public static function setCountries(array $codes): void
+    {
+        $codes = array_values(array_unique(array_filter(array_map(fn ($c) => trim((string) $c), $codes))));
+        Setting::updateOrCreate(['key' => self::COUNTRIES], ['value' => $codes]);
+    }
+
+    /** Ce pays peut-il s'inscrire ? (vide = tous) */
+    public static function allowsCountry(?string $code): bool
+    {
+        $allowed = self::countries();
+        if (! $allowed) {
+            return true;
+        }
+        $code = '+'.ltrim((string) $code, '+');
+
+        return in_array($code, array_map(fn ($c) => '+'.ltrim($c, '+'), $allowed), true);
+    }
+
+    public static function countryMessage(): string
+    {
+        return 'Les inscriptions ne sont pas encore ouvertes dans ton pays. Nous arrivons bientôt !';
+    }
     public static function open(): bool
     {
         $limit = self::limit();
