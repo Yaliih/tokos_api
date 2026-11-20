@@ -280,9 +280,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => str_starts_with($fullPhone, '+243')
-                    ? 'Le SMS n\'a pas pu être envoyé pour le moment. Réessaie dans un instant.'
-                    : 'L\'envoi de SMS n\'est pas encore disponible pour ce pays : utilise un numéro de la RDC (+243).',
+                'message' => $this->smsFailure($fullPhone),
             ], 500);
         }
 
@@ -356,9 +354,7 @@ class AuthController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => str_starts_with($fullPhone, '+243')
-                    ? 'Le SMS n\'a pas pu être envoyé pour le moment. Réessaie dans un instant.'
-                    : 'L\'envoi de SMS n\'est pas encore disponible pour ce pays : utilise un numéro de la RDC (+243).',
+                'message' => $this->smsFailure($fullPhone),
             ], 500);
         }
 
@@ -639,5 +635,23 @@ class AuthController extends Controller
                 $verificationCode->delete();
             }
         }
+    }
+    /** Message d'échec d'envoi : la vraie raison du fournisseur (numéro invalide, pays non couvert…). */
+    private function smsFailure(string $fullPhone): string
+    {
+        $dernier = \App\Models\OutboundMessage::where('to', $fullPhone)->latest('id')->first();
+        $raison = '';
+        foreach ((array) ($dernier?->attempts ?? []) as $essai) {
+            $r = is_array($essai) ? ($essai['error'] ?? $essai['message'] ?? null) : (is_string($essai) ? $essai : null);
+            if ($r) {
+                $raison = mb_substr(trim(preg_replace('/\s+/', ' ', (string) $r)), 0, 160);
+            }
+        }
+        if (str_starts_with($fullPhone, '+243')) {
+            return 'Le SMS n\'a pas pu être envoyé'.($raison !== '' ? ' : '.$raison : '. Vérifie le numéro et réessaie.');
+        }
+
+        return 'L\'envoi de SMS n\'est pas encore disponible pour ce pays : utilise un numéro de la RDC (+243).'
+            .($raison !== '' ? ' (' . $raison . ')' : '');
     }
 }
