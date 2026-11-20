@@ -1022,6 +1022,24 @@
   });
 
   // ── Inscription : code SMS ────────────────────────────────────
+  // Ramène l'assistant à l'étape qui contient un champ donné (ex. la date de naissance)
+  function goToStepOf(form, name) {
+    const field = form.querySelector('[name="' + name + '"]');
+    const step = field && field.closest('[data-step]');
+    if (!step) return false;
+    const all = Array.from(form.querySelectorAll('[data-step]')).filter((s) => !s.hidden);
+    const i = all.indexOf(step);
+    if (i < 0) return false;
+    all.forEach((s, k) => s.classList.toggle('active', k === i));
+    form.querySelectorAll('[data-step-dot]').forEach((d, k) => { d.classList.toggle('current', k === i); d.classList.toggle('done', k < i); });
+    step.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    if (field.focus) field.focus({ preventScroll: true });
+    // Le message s'affiche dans l'étape concernée, pas à l'étape du code
+    const box = step.querySelector('[data-step-error]');
+    if (box) { const s = box.querySelector('span'); if (s) s.textContent = window.__lastCodeError || ''; }
+    return true;
+  }
+
   async function sendCode(form) {
     // Tout le formulaire part avec la demande de code : le serveur vérifie le nom, l'âge et le
     // mot de passe AVANT d'envoyer le SMS (pas de crédit dépensé pour une inscription invalide).
@@ -1029,7 +1047,24 @@
     const body = new FormData(form);
     // Numéro modifié : le prochain « Continuer » renverra un code
     form.querySelectorAll('[name="phone_number"], [name="phone_code"]').forEach((f) => f.addEventListener('input', () => { delete form.dataset.codeSent; }));
-    await send('/api/auth/send-verification-code', body);
+    try {
+      await send('/api/auth/send-verification-code', body);
+    } catch (e) {
+      const msg = (e && e.message) ? e.message : 'Impossible d\'envoyer le code.';
+      window.__lastCodeError = msg;
+      // On revient sur le champ fautif plutôt que de laisser la personne bloquée à l'étape du code
+      const champ = /ans|naissance|âge|age/i.test(msg) ? 'birth_date'
+        : /pr[eé]nom|nom/i.test(msg) ? 'first_name'
+        : /mot de passe|password/i.test(msg) ? 'password'
+        : null;
+      if (champ && goToStepOf(form, champ)) {
+        const step = form.querySelector('[name="' + champ + '"]')?.closest('[data-step]');
+        const box = step && step.querySelector('[data-step-error]');
+        if (box) { box.querySelector('span').textContent = msg; box.hidden = false; }
+        return;
+      }
+      throw e;
+    }
     toast('Code envoyé par SMS.');
   }
   const resend = document.getElementById('send-code');
