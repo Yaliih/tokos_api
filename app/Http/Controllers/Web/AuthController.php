@@ -50,6 +50,17 @@ class AuthController extends Controller
 
     public function register(RegisterRequest $request)
     {
+        // Ceinture et bretelles : âge et pays vérifiés AUSSI à la création du compte
+        $minAge = (int) env('MIN_AGE', 13);
+        if ($request->filled('birth_date')) {
+            try { $age = \Carbon\Carbon::parse($request->birth_date)->age; } catch (\Throwable) { $age = null; }
+            if ($age === null || $age < $minAge) {
+                throw ValidationException::withMessages(['birth_date' => ['Il faut avoir au moins '.$minAge.' ans pour créer un compte.']]);
+            }
+        }
+        if ($request->filled('phone_code') && ! \App\Support\Registration::allowsCountry($request->phone_code)) {
+            throw ValidationException::withMessages(['phone_code' => [\App\Support\Registration::countryMessage()]]);
+        }
         if (! \App\Support\Registration::open()) {
             throw \Illuminate\Validation\ValidationException::withMessages(['phone_number' => \App\Support\Registration::message()]);
         }
