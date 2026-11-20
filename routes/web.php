@@ -38,7 +38,7 @@ Route::get('/espaces/{slug}/competitions', [\App\Http\Controllers\Web\PageContro
 Route::get('/@{handle}/competitions', [\App\Http\Controllers\Web\PageController::class, 'profileCompetitions'])
     ->where('handle', '[A-Za-z0-9_.]+')->name('profile.competitions');
 Route::get('/sitemap.xml', function () {
-    $urls = [];
+    $urls = [url('/'), url('/decouvrir')];
     \App\Models\User::query()->whereNotNull('username')->where('is_active', true)->where('is_private', false)
         ->orderByDesc('last_seen_at')->limit(5000)->pluck('username')
         ->each(function ($u) use (&$urls) { $urls[] = url('/@'.$u); });

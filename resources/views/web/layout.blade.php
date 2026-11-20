@@ -33,6 +33,31 @@
     @endphp
     @if (! empty($noIndex) || $authPage)<meta name="robots" content="noindex, follow">@endif
     <link rel="canonical" href="{{ url()->current() }}">
+    {{-- Ce que Google lit pour comprendre le site et afficher des liens sous le résultat --}}
+    <script type="application/ld+json">
+        {!! json_encode([
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                [
+                    '@type' => 'Organization',
+                    '@id' => url('/').'#organisation',
+                    'name' => 'Sosa',
+                    'url' => url('/'),
+                    'logo' => url('/img/logo.png'),
+                    'sameAs' => ['https://sosa.social'],
+                ],
+                [
+                    '@type' => 'WebSite',
+                    '@id' => url('/').'#site',
+                    'url' => url('/'),
+                    'name' => 'Sosa',
+                    'description' => 'Défis, duels, concours et tournois : mesure-toi aux autres et gagne tes classements.',
+                    'inLanguage' => 'fr',
+                    'publisher' => ['@id' => url('/').'#organisation'],
+                ],
+            ],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !!}
+    </script>
     <meta name="description" content="{{ $description ?? 'Lance des défis, affronte les autres en duel, vote pour tes favoris. Seul ou avec ton Espace.' }}">
     <meta property="og:site_name" content="Sosa">
     <meta property="og:title" content="{{ $title ?? 'Sosa' }}">
