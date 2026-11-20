@@ -1049,6 +1049,25 @@
     return true;
   }
 
+  // Affiche un message d'erreur sous le champ concerné (et en notification) : il est toujours visible
+  function stepError(form, name, msg) {
+    form.querySelectorAll('.step-err').forEach((n) => n.remove());
+    const field = name ? form.querySelector('[name="' + name + '"]') : null;
+    const host = field ? (field.closest('.field') || field.parentElement) : (form.querySelector('[data-step-error]') || form);
+    if (host) {
+      const p = document.createElement('p');
+      p.className = 'step-err';
+      p.textContent = msg;
+      host.appendChild(p);
+      host.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    }
+    const box = form.querySelector('[data-step-error]');
+    if (box && box.querySelector('span')) {
+      box.querySelector('span').textContent = msg;
+      box.hidden = false;
+    }
+    toast(msg, true);
+  }
   async function sendCode(form) {
     // Tout le formulaire part avec la demande de code : le serveur vérifie le nom, l'âge et le
     // mot de passe AVANT d'envoyer le SMS (pas de crédit dépensé pour une inscription invalide).
@@ -1069,12 +1088,10 @@
       // On revient sur le champ fautif, on y affiche la vraie raison, et on marque l'erreur
       // comme traitée : l'assistant ne doit ni avancer, ni écraser ce message par un « code non envoyé ».
       const cible = champ || (/indicatif|pays|num[eé]ro/i.test(msg) ? 'phone_code' : null);
-      // On ne masque l'erreur générique que si elle a vraiment été affichée dans une étape
-      if (cible && goToStepOf(form, cible)) {
-        const step = form.querySelector('[name="' + cible + '"]')?.closest('[data-step]');
-        const box = (step || form).querySelector('[data-step-error]');
-        if (box) { box.querySelector('span').textContent = msg; box.hidden = false; e.handled = true; }
-      }
+      if (cible) goToStepOf(form, cible);
+      // Message affiché sous le champ concerné (et en notification) : jamais silencieux
+      stepError(form, cible, msg);
+      e.handled = true;
       throw e;
     }
     toast('Code envoyé par SMS.');
