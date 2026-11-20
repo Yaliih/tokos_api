@@ -3,6 +3,7 @@
 namespace App\Filament\Pages;
 
 use App\Filament\Widgets\Stats\ActionsChart;
+use App\Filament\Widgets\Stats\Guests;
 use App\Filament\Widgets\Stats\ActiveChart;
 use App\Filament\Widgets\Stats\RecencyChart;
 use App\Filament\Widgets\Stats\RetentionTable;
@@ -28,7 +29,7 @@ class Statistics extends Page
 
     protected function getHeaderWidgets(): array
     {
-        return [UsageOverview::class, ActiveChart::class, ActionsChart::class, RecencyChart::class, RetentionTable::class];
+        return [UsageOverview::class, Guests::class, ActiveChart::class, ActionsChart::class, RecencyChart::class, RetentionTable::class];
     }
 
     public function getHeaderWidgetsColumns(): int|array
