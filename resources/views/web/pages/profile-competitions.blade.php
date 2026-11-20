@@ -4,7 +4,7 @@
     $handle = $owner->username;
     $qs = fn (array $o) => '/@'.$handle.'/competitions?'.http_build_query(array_filter(array_merge(['onglet' => $tab, 'tri' => $tri], $o)));
 @endphp
-<div class="back-line"><a href="/@{{ $handle }}">@icon('arrow-left', 'ico-sm')<span>{{ $ownerName }}</span></a></div>
+<div class="back-line"><a href="{{ '/@'.$handle }}">@icon('arrow-left', 'ico-sm')<span>{{ $ownerName }}</span></a></div>
 
 <div class="pcomp-page">
     <h1>@icon('trophy', 'ico-sm')Compétitions</h1>

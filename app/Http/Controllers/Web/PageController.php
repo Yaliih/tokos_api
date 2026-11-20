@@ -654,7 +654,7 @@ class PageController extends Controller
         };
 
         return view('web.pages.profile-competitions', [
-            'current' => 'profile', 'hideRail' => true, 'noIndex' => false,
+            'current' => 'profile', 'noIndex' => false,
             'owner' => $user, 'me' => $me, 'tab' => $tab, 'tri' => $tri, 'ownerName' => Participant::name($user),
             'title' => 'Compétitions de '.Participant::name($user),
             'description' => 'Les compétitions de '.Participant::name($user).' sur Sosa : créées et participées.',
