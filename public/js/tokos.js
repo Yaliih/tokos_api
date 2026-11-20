@@ -1035,7 +1035,8 @@
     if (Number.isNaN(cible)) return false;
     // Les étapes et les pastilles portent le même numéro : on s'aligne dessus
     form.querySelectorAll('[data-step]').forEach((s) => s.classList.toggle('active', s === step));
-    form.querySelectorAll('[data-step-dot]').forEach((d) => {
+    // Les pastilles sont souvent HORS du formulaire (au-dessus) : on les cherche dans la page
+    document.querySelectorAll('[data-step-dot]').forEach((d) => {
       const k = Number(d.dataset.stepDot);
       d.classList.toggle('current', k === cible);
       d.classList.toggle('done', k < cible);
