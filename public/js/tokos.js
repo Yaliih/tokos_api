@@ -979,7 +979,8 @@
           form.dataset.codeSent = '1'; // un seul SMS par numéro : « Renvoyer » reste disponible
         } catch (e) {
           next.disabled = false;
-          return showError(e.message);
+          // Message déjà affiché dans l'étape concernée : on ne remet pas « code non envoyé » par-dessus
+          return e && e.handled ? undefined : showError(e.message);
         }
         next.disabled = false;
       }
@@ -1057,14 +1058,16 @@
         : /pr[eé]nom|nom/i.test(msg) ? 'first_name'
         : /mot de passe|password/i.test(msg) ? 'password'
         : null;
-      if (champ) {
-        // On revient sur le champ fautif PUIS on relance l'erreur : l'assistant ne doit pas
-        // avancer vers l'étape du code tant que le SMS n'est pas parti.
-        goToStepOf(form, champ);
-        const step = form.querySelector('[name="' + champ + '"]')?.closest('[data-step]');
+      // On revient sur le champ fautif, on y affiche la vraie raison, et on marque l'erreur
+      // comme traitée : l'assistant ne doit ni avancer, ni écraser ce message par un « code non envoyé ».
+      const cible = champ || (/indicatif|pays/i.test(msg) ? 'phone_code' : null);
+      if (cible) {
+        goToStepOf(form, cible);
+        const step = form.querySelector('[name="' + cible + '"]')?.closest('[data-step]');
         const box = step && step.querySelector('[data-step-error]');
         if (box) { box.querySelector('span').textContent = msg; box.hidden = false; }
       }
+      e.handled = true;
       throw e;
     }
     toast('Code envoyé par SMS.');

@@ -78,7 +78,15 @@ class Registration
 
     public static function countryMessage(): string
     {
-        return 'Les inscriptions ne sont pas encore ouvertes dans ton pays. Nous arrivons bientôt !';
+        $allowed = self::countries();
+        if (! $allowed) {
+            return 'Les inscriptions ne sont pas encore ouvertes dans ton pays. Nous arrivons bientôt !';
+        }
+        $liste = implode(', ', $allowed);
+
+        return count($allowed) === 1
+            ? 'Pour le moment, seules les inscriptions avec l\'indicatif '.$liste.' sont ouvertes.'
+            : 'Pour le moment, seules les inscriptions avec les indicatifs '.$liste.' sont ouvertes.';
     }
     public static function open(): bool
     {
