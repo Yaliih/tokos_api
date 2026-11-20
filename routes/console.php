@@ -194,6 +194,22 @@ Artisan::command('fonts:local', function () {
 
     return 0;
 })->purpose('Télécharger la police du site pour la servir localement (plus rapide, zéro requête externe)');
+// Prévenir Bing (IndexNow) des pages publiques : php artisan indexnow:ping  (40 au plus par appel)
+Artisan::command('indexnow:ping {--limit=40}', function () {
+    $limit = max(1, (int) $this->option('limit'));
+    $urls = [url('/'), url('/decouvrir')];
+    \App\Models\User::whereNotNull('username')->where('is_active', true)->where('is_private', false)->latest('id')->limit($limit)->pluck('username')
+        ->each(function ($u) use (&$urls) { $urls[] = url('/@'.$u); });
+    \App\Models\Space::where('is_active', true)->latest('id')->limit($limit)->pluck('slug')
+        ->each(function ($s) use (&$urls) { $urls[] = url('/espaces/'.$s); });
+    \App\Models\Competition::whereNull('hidden_at')->latest('id')->limit($limit)->pluck('slug')
+        ->each(function ($c) use (&$urls) { $urls[] = url('/c/'.$c); });
+
+    $ok = \App\Support\IndexNow::ping($urls);
+    $this->info(($ok ? 'Envoyé' : 'Échec de l\'envoi').' — '.count($urls).' URL à '.parse_url(config('app.url'), PHP_URL_HOST));
+
+    return $ok ? 0 : 1;
+})->purpose('Prévenir Bing et les autres moteurs (IndexNow) des pages publiques');
 // Plafonner le nombre de comptes (bêta) : php artisan registration:limit 50  (0 = illimité)
 Artisan::command('registration:limit {max?}', function () {
     $current = \App\Support\Registration::limit();
