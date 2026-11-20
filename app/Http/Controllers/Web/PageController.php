@@ -34,6 +34,9 @@ class PageController extends Controller
         $view = in_array($request->query('vue'), ['direct', 'ouvertes'], true) ? $request->query('vue') : 'fil';
         $data = [
             'current' => 'home', 'view' => $view, 'blocks' => [], 'next' => null, 'matches' => collect(), 'open' => collect(),
+            // Ce que Google affiche : le nom recherché d'abord, puis ce qu'on y fait
+            'title' => $me ? 'Sosa' : 'Sosa social — défis, duels et concours entre amis',
+            'description' => $me ? null : 'Défie tes amis, gagne tes duels, entre dans les concours et tournois de ta ville. Sosa social : le réseau où les talents se mesurent.',
             'invitations' => $me ? $this->pendingInvitations($me)->count() : 0,
             // Badge de l'onglet « Duels » : seulement les duels apparus depuis la dernière visite de l'onglet
             'liveCount' => $view === 'direct' ? 0 : self::newDuelsCount($request),

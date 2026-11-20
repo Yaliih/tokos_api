@@ -4,6 +4,13 @@
     <section class="card welcome">
         <h1>Défie, affronte, fais voter.</h1>
         <p>Publie ta meilleure performance, laisse les autres venir te défier, et que le public tranche. Seul, ou avec ton Espace contre un autre.</p>
+        {{-- Liens courts et clairs : c'est aussi ce que Google reprend sous le résultat --}}
+        <nav class="home-nav" aria-label="Sections du site">
+            <a href="/decouvrir">Découvrir</a>
+            <a href="/espaces">Espaces</a>
+            <a href="/?vue=ouvertes">Compétitions ouvertes</a>
+            <a href="/connexion">Connexion</a>
+        </nav>
         <div class="row">
             @feature('registration')<a class="btn btn-lg" href="/inscription">@icon('user-plus', 'ico-sm')Créer un compte</a>@endfeature
             <a class="btn btn-outline btn-lg hide-sm" href="/?vue=direct">@icon('vs', 'ico-sm')Voir les duels</a>

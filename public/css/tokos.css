@@ -3136,3 +3136,9 @@ select.input option, .input select option { background: var(--surface); color: v
   select.input, .input select { background-color: var(--surface-2); color: var(--text); border-color: var(--border); }
   select.input option, .input select option { background: #17171d; color: #f5f5f7; }
 }
+
+/* Accueil visiteur : liens de sections (repris comme sitelinks par Google) */
+.home-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 16px; }
+.home-nav a { padding: 8px 14px; border-radius: 999px; background: var(--surface-2); font-weight: 700; font-size: .85rem; color: var(--text); }
+.home-nav a:hover { background: var(--primary-soft); color: var(--primary); }
+@media (max-width: 560px) { .home-nav a { padding: 7px 12px; font-size: .8rem; } }
