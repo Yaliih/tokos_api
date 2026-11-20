@@ -1068,14 +1068,13 @@
         : null;
       // On revient sur le champ fautif, on y affiche la vraie raison, et on marque l'erreur
       // comme traitée : l'assistant ne doit ni avancer, ni écraser ce message par un « code non envoyé ».
-      const cible = champ || (/indicatif|pays/i.test(msg) ? 'phone_code' : null);
-      if (cible) {
-        goToStepOf(form, cible);
+      const cible = champ || (/indicatif|pays|num[eé]ro/i.test(msg) ? 'phone_code' : null);
+      // On ne masque l'erreur générique que si elle a vraiment été affichée dans une étape
+      if (cible && goToStepOf(form, cible)) {
         const step = form.querySelector('[name="' + cible + '"]')?.closest('[data-step]');
-        const box = step && step.querySelector('[data-step-error]');
-        if (box) { box.querySelector('span').textContent = msg; box.hidden = false; }
+        const box = (step || form).querySelector('[data-step-error]');
+        if (box) { box.querySelector('span').textContent = msg; box.hidden = false; e.handled = true; }
       }
-      e.handled = true;
       throw e;
     }
     toast('Code envoyé par SMS.');
