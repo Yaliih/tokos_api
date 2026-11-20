@@ -60,7 +60,7 @@
         <div class="fb-final-duo">
             @foreach ($pairs[0] as $k => $av)
                 @if ($k === 1)<span class="fb-vs">@icon('trophy')</span>@endif
-                @if ($av)<img src="{{ $av }}" alt="">@else<span class="fb-empty"></span>@endif
+                @if ($av)<img src="{{ $av }}" alt="Photo de profil">@else<span class="fb-empty"></span>@endif
             @endforeach
         </div>
     @endif

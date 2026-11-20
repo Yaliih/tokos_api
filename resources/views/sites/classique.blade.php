@@ -4,10 +4,10 @@
 <section class="s-hero {{ $space->cover ? 'has-cover' : '' }}">
     @if ($space->cover)
         @if (($space->cover_type ?? 'image') === 'video')<video src="{{ $space->cover_url }}#t=0.1" muted loop playsinline autoplay preload="metadata"></video>
-        @else<img src="{{ $space->cover_url }}" alt="">@endif
+        @else<img src="{{ $space->cover_url }}" alt="{{ $space->name }}">@endif
     @endif
     <div class="s-hero-in">
-        <img class="s-logo" src="{{ $space->avatar_url }}" alt="">
+        <img class="s-logo" src="{{ $space->avatar_url }}" alt="{{ $space->name }}">
         <p class="s-kicker">{{ $label ?: 'Espace' }}@if($space->location) · {{ $space->location }}@endif</p>
         <h1>{{ $space->name }}</h1>
         @if ($space->bio)<p class="s-bio">{{ $space->bio }}</p>@endif

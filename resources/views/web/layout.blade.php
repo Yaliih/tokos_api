@@ -164,13 +164,13 @@
         @auth
             <a class="nav-link" href="/notifications" @if($current === 'notifications') aria-current="page" @endif>@icon('bell')Notifications @if($unread)<span class="count">{{ $unread }}</span>@endif</a>
             <a class="nav-link" href="/defis-recus" @if($current === 'invitations') aria-current="page" @endif>@icon('vs')Reçus @if($pendingInvites)<span class="count">{{ $pendingInvites }}</span>@endif</a>
-            <a class="nav-link" href="{{ $meP['url'] }}" @if($current === 'profile') aria-current="page" @endif><img loading="lazy" decoding="async" class="avatar xs" src="{{ $meP['avatar_url'] }}" alt="">Mon profil</a>
+            <a class="nav-link" href="{{ $meP['url'] }}" @if($current === 'profile') aria-current="page" @endif><img loading="lazy" decoding="async" class="avatar xs" src="{{ $meP['avatar_url'] }}" alt="Sosa">Mon profil</a>
             <a class="btn btn-lg side-cta" href="/creer">@icon('plus')Créer</a>
             @if ($mySpaces->isNotEmpty() && \App\Support\Features::on('spaces'))
                 <div class="side-title">Mes Espaces</div>
                 <div class="side-spaces">
                     @foreach ($mySpaces as $sp)
-                        <a href="/espaces/{{ $sp->slug }}"><img loading="lazy" decoding="async" class="avatar xs space" src="{{ $sp->avatar_url }}" alt="">{{ $sp->name }}</a>
+                        <a href="/espaces/{{ $sp->slug }}"><img loading="lazy" decoding="async" class="avatar xs space" src="{{ $sp->avatar_url }}" alt="Sosa">{{ $sp->name }}</a>
                     @endforeach
                 </div>
             @endif
@@ -215,7 +215,7 @@
     <a href="/decouvrir" @if($current === 'discover') aria-current="page" @endif>@icon('compass')<span>Découvrir</span></a>
     <a href="/creer" aria-label="Créer"><span class="create">@icon('plus')</span></a>
     @feature('leaderboard')<a href="/classements" @if($current === 'leaderboards') aria-current="page" @endif>@icon('chart')<span>Classement</span></a>@endfeature
-    <a href="{{ $meP['url'] ?? '/connexion' }}" @if($current === 'profile') aria-current="page" @endif>@if($meP)<img loading="lazy" decoding="async" class="avatar xs" src="{{ $meP['avatar_url'] }}" alt="">@else @icon('user')@endif<span>Profil</span></a>
+    <a href="{{ $meP['url'] ?? '/connexion' }}" @if($current === 'profile') aria-current="page" @endif>@if($meP)<img loading="lazy" decoding="async" class="avatar xs" src="{{ $meP['avatar_url'] }}" alt="Sosa">@else @icon('user')@endif<span>Profil</span></a>
 </nav>
 @endunless
 <template data-icon-wa>@icon('whatsapp')</template><template data-icon-link>@icon('link')</template><template data-icon-flag>@icon('flag')</template><template data-icon-more>@icon('more')</template>

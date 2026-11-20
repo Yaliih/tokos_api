@@ -39,8 +39,8 @@
             <span class="story-ring"><span class="inner">
                 {{-- Les deux côtés l'un contre l'autre : le mince écart entre les deux est la ligne du milieu --}}
                 <span class="pair">
-                    @if ($ia)<img loading="lazy" decoding="async" src="{{ $ia }}" alt="">@else<span class="a">{{ mb_strtoupper(mb_substr($lm->entryA?->displayName() ?? '?', 0, 1)) }}</span>@endif
-                    @if ($ib)<img loading="lazy" decoding="async" src="{{ $ib }}" alt="">@else<span class="b">{{ mb_strtoupper(mb_substr($lm->entryB?->displayName() ?? '?', 0, 1)) }}</span>@endif
+                    @if ($ia)<img loading="lazy" decoding="async" src="{{ $ia }}" alt="Photo de profil">@else<span class="a">{{ mb_strtoupper(mb_substr($lm->entryA?->displayName() ?? '?', 0, 1)) }}</span>@endif
+                    @if ($ib)<img loading="lazy" decoding="async" src="{{ $ib }}" alt="Photo de profil">@else<span class="b">{{ mb_strtoupper(mb_substr($lm->entryB?->displayName() ?? '?', 0, 1)) }}</span>@endif
                 </span>
                 <span class="vs">VS</span>
             </span></span>

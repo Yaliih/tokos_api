@@ -91,7 +91,7 @@
         <div class="edit-cover" data-preview>
             <div class="edit-cover-media" data-preview-box>
                 @if ($cover)
-                    @if ($coverType === 'video')<video src="{{ $cover }}#t=0.1" muted playsinline loop preload="metadata"></video>@else<img loading="lazy" decoding="async" src="{{ $cover }}" alt="">@endif
+                    @if ($coverType === 'video')<video src="{{ $cover }}#t=0.1" muted playsinline loop preload="metadata"></video>@else<img loading="lazy" decoding="async" src="{{ $cover }}" alt="Photo de profil">@endif
                 @else
                     <span class="edit-cover-empty">@icon('image')Ajoute une photo ou une courte vidéo</span>
                 @endif
@@ -108,7 +108,7 @@
         </div>
 
         <div class="edit-avatar" data-preview>
-            <span class="edit-avatar-img" data-preview-box><img loading="lazy" decoding="async" src="{{ $avatar }}" alt=""></span>
+            <span class="edit-avatar-img" data-preview-box><img loading="lazy" decoding="async" src="{{ $avatar }}" alt="Photo de profil"></span>
             <input type="file" name="avatar" accept="image/*" hidden data-preview-input data-max-mb="8">
             <button type="button" class="edit-avatar-btn" data-preview-pick aria-label="Changer la photo de profil">@icon('camera', 'ico-sm')</button>
             {{-- Retirer la photo : confirmation, puis suppression immédiate --}}

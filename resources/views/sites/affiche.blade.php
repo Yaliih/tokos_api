@@ -13,8 +13,8 @@
     </div>
     <div class="s-poster-img">
         @if ($space->cover && ($space->cover_type ?? 'image') === 'video')<video src="{{ $space->cover_url }}#t=0.1" muted loop playsinline autoplay preload="metadata"></video>
-        @elseif ($space->cover)<img src="{{ $space->cover_url }}" alt="">
-        @else<img class="s-poster-logo" src="{{ $space->avatar_url }}" alt="">@endif
+        @elseif ($space->cover)<img src="{{ $space->cover_url }}" alt="{{ $space->name }}">
+        @else<img class="s-poster-logo" src="{{ $space->avatar_url }}" alt="{{ $space->name }}">@endif
     </div>
 </section>
 @endsection

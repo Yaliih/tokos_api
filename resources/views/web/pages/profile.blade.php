@@ -3,7 +3,7 @@
 @php $p = $s['participant']; $cover = $owner->getRawOriginal('cover') ? $owner->cover : null; @endphp
 <section class="card profile">
     {{-- La couverture et la photo de profil s'ouvrent en grand (la vidéo avec le son) --}}
-    <div class="profile-cover">@if($cover)@if(($owner->cover_type ?? 'image') === 'video')<button type="button" class="cover-open" data-zoom-src="{{ $cover }}" data-zoom-type="video" aria-label="Voir la couverture en grand"><video src="{{ $cover }}#t=0.1" muted loop playsinline autoplay preload="metadata"></video></button>@else<img loading="lazy" decoding="async" src="{{ $cover }}" alt="" data-zoom>@endif @endif</div>
+    <div class="profile-cover">@if($cover)@if(($owner->cover_type ?? 'image') === 'video')<button type="button" class="cover-open" data-zoom-src="{{ $cover }}" data-zoom-type="video" aria-label="Voir la couverture en grand"><video src="{{ $cover }}#t=0.1" muted loop playsinline autoplay preload="metadata"></video></button>@else<img loading="lazy" decoding="async" src="{{ $cover }}" alt="Photo de profil" data-zoom>@endif @endif</div>
     <div class="profile-body">
         <div class="profile-top">
             @if (! empty($p['has_avatar']))<button type="button" class="avatar-open" data-zoom-src="{{ $p['avatar_url'] }}" aria-label="Voir la photo de profil en grand">@include('web.partials.avatar', ['p' => $p, 'size' => 'lg'])</button>@else @include('web.partials.avatar', ['p' => $p, 'size' => 'lg'])@endif

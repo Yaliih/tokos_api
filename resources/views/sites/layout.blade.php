@@ -20,7 +20,7 @@
 </head>
 <body class="site t-{{ $template }}">
 <header class="s-bar">
-    <a class="s-brand" href="#top"><img src="{{ $s->avatar_url }}" alt="">{{ $s->name }}@if($s->is_verified)@icon('check-circle', 's-ok')@endif</a>
+    <a class="s-brand" href="#top"><img src="{{ $s->avatar_url }}" alt="{{ $space->name }}">{{ $s->name }}@if($s->is_verified)@icon('check-circle', 's-ok')@endif</a>
     <nav class="s-nav" aria-label="Sections">
         @if ($live->isNotEmpty())<a href="#en-ce-moment">En ce moment</a>@endif
         @if ($past->isNotEmpty())<a href="#palmares">Palmarès</a>@endif
@@ -52,7 +52,7 @@
             @foreach ($past as $c)
                 @php $w = $c['winner']['participant'] ?? null; @endphp
                 <li><a href="{{ $u($c['url']) }}">
-                    <span class="s-palm-who">@if($w)<img src="{{ $w['avatar_url'] }}" alt="">@endif<span class="s-crown">@icon('crown')</span></span>
+                    <span class="s-palm-who">@if($w)<img src="{{ $w['avatar_url'] }}" alt="{{ $space->name }}">@endif<span class="s-crown">@icon('crown')</span></span>
                     <span class="s-palm-t"><b>{{ $c['winner']['display_name'] ?? ($w['name'] ?? '') }}</b><small>{{ $c['title'] }}@if($c['category_label']) · {{ $c['category_label'] }}@endif</small></span>
                     <span class="s-palm-d">{{ $c['ends_at'] ? \Illuminate\Support\Carbon::parse($c['ends_at'])->locale('fr')->isoFormat('MMM YYYY') : '' }}</span>
                 </a></li>
@@ -67,7 +67,7 @@
         <p class="s-lead">Les membres qui ont le plus de points cette saison.</p>
         <div class="s-talents">
             @foreach ($talents as $t)
-                <a href="{{ $u($t['participant']['url']) }}"><img src="{{ $t['participant']['avatar_url'] }}" alt=""><b>{{ $t['participant']['name'] }}</b><small>{{ $t['points'] }} pt{{ $t['points'] > 1 ? 's' : '' }} · {{ $t['wins'] }} victoire{{ $t['wins'] > 1 ? 's' : '' }}</small></a>
+                <a href="{{ $u($t['participant']['url']) }}"><img src="{{ $t['participant']['avatar_url'] }}" alt="{{ $space->name }}"><b>{{ $t['participant']['name'] }}</b><small>{{ $t['points'] }} pt{{ $t['points'] > 1 ? 's' : '' }} · {{ $t['wins'] }} victoire{{ $t['wins'] > 1 ? 's' : '' }}</small></a>
             @endforeach
         </div>
     </section>
@@ -88,7 +88,7 @@
             </ul>
             @if ($managers->isNotEmpty())
                 <div class="s-mgr"><small>Responsables</small>
-                    @foreach ($managers as $m)<a href="{{ $u($m['url']) }}"><img src="{{ $m['avatar_url'] }}" alt="">{{ $m['name'] }}</a>@endforeach</div>
+                    @foreach ($managers as $m)<a href="{{ $u($m['url']) }}"><img src="{{ $m['avatar_url'] }}" alt="{{ $space->name }}">{{ $m['name'] }}</a>@endforeach</div>
             @endif
         </div>
     </section>

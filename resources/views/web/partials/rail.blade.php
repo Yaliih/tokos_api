@@ -37,10 +37,10 @@
                         @foreach ([$ca, $cb] as $ch)
                             @php $m = $ch['m']; @endphp
                             @if ($m && $m['type'] === 'image')
-                                <img loading="lazy" decoding="async" src="{{ $m['thumbnail_url'] ?? $m['url'] }}" alt="">
+                                <img loading="lazy" decoding="async" src="{{ $m['thumbnail_url'] ?? $m['url'] }}" alt="Photo de profil">
                             @elseif ($m && $m['type'] === 'video')
                                 <span class="thumb is-video">
-                                    @if (! empty($m['thumbnail_url']))<img loading="lazy" decoding="async" src="{{ $m['thumbnail_url'] }}" alt="">
+                                    @if (! empty($m['thumbnail_url']))<img loading="lazy" decoding="async" src="{{ $m['thumbnail_url'] }}" alt="Photo de profil">
                                     @else<video src="{{ $m['url'] }}#t=0.5" preload="metadata" muted playsinline tabindex="-1" aria-hidden="true"></video>@endif
                                     <i>@icon('play')</i>
                                 </span>
@@ -51,8 +51,8 @@
                             @endif
                         @endforeach
                     @else
-                        @if ($pa)<img loading="lazy" decoding="async" src="{{ $pa['avatar_url'] }}" alt="">@else<span class="dot"></span>@endif
-                        @if ($pb)<img loading="lazy" decoding="async" src="{{ $pb['avatar_url'] }}" alt="">@else<span class="dot"></span>@endif
+                        @if ($pa)<img loading="lazy" decoding="async" src="{{ $pa['avatar_url'] }}" alt="Photo de profil">@else<span class="dot"></span>@endif
+                        @if ($pb)<img loading="lazy" decoding="async" src="{{ $pb['avatar_url'] }}" alt="Photo de profil">@else<span class="dot"></span>@endif
                     @endif
                 </span>
                 @php

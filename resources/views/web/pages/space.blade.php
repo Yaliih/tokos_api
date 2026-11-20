@@ -2,7 +2,7 @@
 @section('content')
 @php $p = $s['participant']; @endphp
 <section class="card profile">
-    <div class="profile-cover">@if($space->cover)@if(($space->cover_type ?? 'image') === 'video')<button type="button" class="cover-open" data-zoom-src="{{ $space->cover_url }}" data-zoom-type="video" aria-label="Voir la couverture en grand"><video src="{{ $space->cover_url }}#t=0.1" muted loop playsinline autoplay preload="metadata"></video></button>@else<img loading="lazy" decoding="async" src="{{ $space->cover_url }}" alt="" data-zoom>@endif @endif</div>
+    <div class="profile-cover">@if($space->cover)@if(($space->cover_type ?? 'image') === 'video')<button type="button" class="cover-open" data-zoom-src="{{ $space->cover_url }}" data-zoom-type="video" aria-label="Voir la couverture en grand"><video src="{{ $space->cover_url }}#t=0.1" muted loop playsinline autoplay preload="metadata"></video></button>@else<img loading="lazy" decoding="async" src="{{ $space->cover_url }}" alt="Photo de profil" data-zoom>@endif @endif</div>
     <div class="profile-body">
         <div class="profile-top">
             @if (! empty($p['has_avatar']))<button type="button" class="avatar-open" data-zoom-src="{{ $p['avatar_url'] }}" aria-label="Voir la photo en grand">@include('web.partials.avatar', ['p' => $p, 'size' => 'lg'])</button>@else @include('web.partials.avatar', ['p' => $p, 'size' => 'lg'])@endif

@@ -5,7 +5,7 @@
     @elseif ($m['type'] === 'audio')
         @include('web.partials.wave', ['m' => $m])
     @else
-        <img src="{{ $m['url'] }}" alt="" loading="lazy" data-zoom>
+        <img src="{{ $m['url'] }}" alt="Photo de profil" loading="lazy" data-zoom>
     @endif
     @break($limit ?? false)
 @endforeach

@@ -89,7 +89,7 @@
                     <div class="side-visual">
                         <div class="ring-player" data-ring-player>
                             <svg class="rp-ring" viewBox="0 0 100 100" aria-hidden="true"><circle class="rp-bg" cx="50" cy="50" r="47"/><circle class="rp-fg" cx="50" cy="50" r="47" pathLength="100"/></svg>
-                            <span class="rp-face">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="">@else<span class="initial">{{ $initial }}</span>@endif</span>
+                            <span class="rp-face">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="Photo de profil">@else<span class="initial">{{ $initial }}</span>@endif</span>
                             <button type="button" class="rp-btn" data-ring-toggle aria-label="Écouter {{ $e['display_name'] }}">@icon('play', 'play')@icon('pause', 'pause')</button>
                             <audio src="{{ $audio['url'] }}" preload="metadata"></audio>
                         </div>
@@ -107,10 +107,10 @@
                             {{-- Duel en texte : le texte se replie (même mécanique que les publications), « Voir plus » déplie par paliers --}}
                             <div class="quote"><div class="rm" data-rm="4"><p class="rm-txt">{!! $choice ? e($e['display_name']) : \App\Support\Mentions::html($e['content'], $e['mentions'] ?? []) !!}</p><button type="button" class="rm-btn" data-rm-btn hidden>Voir plus</button></div></div>
                         @else
-                            <span class="face">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="">@else<span class="initial">{{ $initial }}</span>@endif</span>
+                            <span class="face">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="Photo de profil">@else<span class="initial">{{ $initial }}</span>@endif</span>
                         @endif
                         {{-- Sur la carte, discrètement : qui, et combien --}}
-                        @unless ($choice)<a class="tag" href="{{ $href }}">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="">@endif<span>{{ $e['display_name'] }}</span></a>@endunless
+                        @unless ($choice)<a class="tag" href="{{ $href }}">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="Photo de profil">@endif<span>{{ $e['display_name'] }}</span></a>@endunless
                         @if ($pct !== null)<span class="pct">{{ round($pct) }}%</span>@endif
                     </div>
                 @endif

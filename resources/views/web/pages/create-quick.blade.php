@@ -38,7 +38,7 @@
         <div class="qc-who" data-as>
             <input type="hidden" name="space" value="{{ $as ? $as->slug : '' }}" data-as-input>
             <button type="button" class="qc-as" data-as-btn aria-haspopup="listbox" aria-expanded="false">
-                <img class="avatar" src="{{ $asP['avatar_url'] }}" alt="" data-as-img>
+                <img class="avatar" src="{{ $asP['avatar_url'] }}" alt="Photo de profil" data-as-img>
                 <span class="qc-as-t"><small>Publier en tant que</small><b data-as-name>{{ $asP['name'] }}</b></span>
                 @icon('chevron-down', 'ico-sm qc-as-caret')</button>
             <div class="qc-pop" data-as-pop hidden role="listbox" aria-label="Publier en tant que"></div>

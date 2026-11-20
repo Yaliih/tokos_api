@@ -32,7 +32,7 @@
 @auth
     {{-- Proposé seulement quand le téléphone sait installer l'application --}}
     <div class="card install-banner" data-install hidden>
-        <img loading="lazy" decoding="async" src="/icons/icon-192.png" alt="" width="40" height="40">
+        <img loading="lazy" decoding="async" src="/icons/icon-192.png" alt="Photo de profil" width="40" height="40">
         <span class="grow"><b>Installe Sosa</b><small>Plus rapide, et moins de données consommées.</small></span>
         <button type="button" class="btn btn-sm" data-install-go>@icon('download', 'ico-sm')Installer</button>
         <button type="button" class="icon-btn" data-install-dismiss aria-label="Plus tard">@icon('x', 'ico-sm')</button>

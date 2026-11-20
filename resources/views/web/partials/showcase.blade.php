@@ -4,10 +4,10 @@
     @if ($sm && $sm['type'] === 'video')
         <div class="media-video">@include('web.partials.video', ['src' => $sm['url'], 'poster' => $sm['thumbnail_url'] ?? null, 'meta' => $sm['metadata'] ?? null, 'natural' => true])</div>
     @elseif ($sm && $sm['type'] === 'image')
-        <img src="{{ $sm['url'] }}" alt="" loading="lazy" data-zoom>
+        <img src="{{ $sm['url'] }}" alt="Photo de profil" loading="lazy" data-zoom>
     @elseif ($sm && $sm['type'] === 'audio')
         <div class="showcase-audio">
-            <span class="face">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="">@else<span class="initial">{{ mb_strtoupper(mb_substr($e['display_name'] ?? '?', 0, 1)) }}</span>@endif</span>
+            <span class="face">@if ($face)<img loading="lazy" decoding="async" src="{{ $face }}" alt="Photo de profil">@else<span class="initial">{{ mb_strtoupper(mb_substr($e['display_name'] ?? '?', 0, 1)) }}</span>@endif</span>
             @include('web.partials.wave', ['m' => $sm])
         </div>
     @endif

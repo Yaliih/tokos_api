@@ -25,7 +25,7 @@
         @endphp
         <a class="ds-row {{ $m['status'] === 'voting' ? 'live' : '' }}" href="{{ $m['url'] }}">
             <span class="ds-side">
-                <img class="avatar sm" src="{{ $a['avatar_url'] ?? $a['participant']['avatar_url'] ?? '' }}" alt="">
+                <img class="avatar sm" src="{{ $a['avatar_url'] ?? $a['participant']['avatar_url'] ?? '' }}" alt="Photo de profil">
                 <span class="ds-name {{ $won($a) ? 'won' : '' }}">{{ $a['display_name'] ?? '?' }}</span>
             </span>
             <span class="ds-mid">
@@ -40,7 +40,7 @@
             </span>
             <span class="ds-side right">
                 <span class="ds-name {{ $won($b) ? 'won' : '' }}">{{ $b['display_name'] ?? 'En attente' }}</span>
-                @if ($b)<img class="avatar sm" src="{{ $b['avatar_url'] ?? $b['participant']['avatar_url'] ?? '' }}" alt="">@endif
+                @if ($b)<img class="avatar sm" src="{{ $b['avatar_url'] ?? $b['participant']['avatar_url'] ?? '' }}" alt="Photo de profil">@endif
             </span>
         </a>
     @empty

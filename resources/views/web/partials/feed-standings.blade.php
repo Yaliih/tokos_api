@@ -8,7 +8,7 @@
             @else
                 <li class="fs-row {{ $r['rank'] <= 3 ? 'top r'.$r['rank'] : '' }}">
                     <span class="fs-rank">@if($r['rank'] === 1)@icon('crown', 'ico-sm')@else{{ $r['rank'] }}@endif</span>
-                    @if ($r['avatar'])<img class="fs-av" src="{{ $r['avatar'] }}" alt="" loading="lazy">@else<span class="fs-av fs-ini">{{ mb_strtoupper(mb_substr($r['name'], 0, 1)) }}</span>@endif
+                    @if ($r['avatar'])<img class="fs-av" src="{{ $r['avatar'] }}" alt="Photo de profil" loading="lazy">@else<span class="fs-av fs-ini">{{ mb_strtoupper(mb_substr($r['name'], 0, 1)) }}</span>@endif
                     <span class="fs-name">{{ $r['name'] }}</span>
                     <span class="fs-votes"><b>{{ number_format($r['votes'], 0, ',', ' ') }}</b> vote{{ $r['votes'] > 1 ? 's' : '' }}</span>
                 </li>

@@ -19,7 +19,7 @@
         @if (($c['cover_type'] ?? 'image') === 'video')
             <div class="comp-cover is-video">@include('web.partials.video', ['src' => $c['cover_url'], 'natural' => true])</div>
         @else
-            <a href="{{ $c['url'] }}" class="comp-cover" tabindex="-1" aria-hidden="true"><img src="{{ $c['cover_url'] }}" alt="" loading="lazy"></a>
+            <a href="{{ $c['url'] }}" class="comp-cover" tabindex="-1" aria-hidden="true"><img src="{{ $c['cover_url'] }}" alt="Photo de profil" loading="lazy"></a>
         @endif
     @endif
     @php $hasVisual = $c['cover_url'] || $oeShow || ($inline && $oe); @endphp
